@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamVault — Choose Your Plan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        body: ['"Sora"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --bg: #06060d;
+            --card: rgba(255,255,255,0.025);
+            --card-border: rgba(255,255,255,0.055);
+            --accent: #e50914;
+            --accent-glow: rgba(229,9,20,0.3);
+            --purple: #8b5cf6;
+            --purple-glow: rgba(139,92,246,0.25);
+            --cyan: #06b6d4;
+            --cyan-glow: rgba(6,182,212,0.25);
+            --green: #22c55e;
+            --green-glow: rgba(34,197,94,0.25);
+            --muted: rgba(255,255,255,0.38);
+            --dim: rgba(255,255,255,0.16);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Sora', sans-serif;
+            background: var(--bg);
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* Atmospheric orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(140px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .orb-1 {
+            width: 600px; height: 600px;
+            top: -250px; left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent);
+            opacity: 0.04;
+            animation: drift1 18s ease-in-out infinite;
+        }
+        .orb-2 {
+            width: 500px; height: 500px;
+            bottom: -200px; right: -150px;
+            background: var(--purple);
+            opacity: 0.035;
+            animation: drift2 20s ease-in-out infinite;
+        }
+        .orb-3 {
+            width: 400px; height: 400px;
+            bottom: -100px; left: -100px;
+            background: var(--cyan);
+            opacity: 0.025;
+            animation: drift3 16s ease-in-out infinite;
+        }
+        @keyframes drift1 {
+            0%, 100% { transform: translateX(-50%) translateY(0) scale(1); }
+            50% { transform: translateX(-50%) translateY(30px) scale(1.08); }
+        }
+        @keyframes drift2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(-30px, -35px) scale(1.12); }
+        }
+        @keyframes drift3 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(25px, -20px) scale(1.1); }
+        }
+
+        /* Noise texture */
+        .noise {
+            position: fixed; inset: 0; z-index: 1;
+            pointer-events: none; opacity: 0.01;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size: 200px 200px;
+        }
+
+        /* Glass card base */
+        .glass {
+            background: var(--card);
+            backdrop-filter: blur(40px) saturate(1.15);
+            -webkit-backdrop-filter: blur(40px) saturate(1.15);
+            border: 1px solid var(--card-border);
+        }
+
+        /* Pricing card hover */
+        .plan-card {
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                        box-shadow 0.4s ease,
+                        border-color 0.4s ease;
+        }
+        .plan-card:hover {
+            transform: translateY(-8px) scale(1.02);
+        }
+        .plan-card.basic:hover {
+            border-color: rgba(6,182,212,0.2);
+            box-shadow: 0 8px 50px rgba(0,0,0,0.4), 0 0 40px var(--cyan-glow);
+        }
+        .plan-card.standard:hover {
+            border-color: rgba(229,9,20,0.25);
+            box-shadow: 0 8px 50px rgba(0,0,0,0.4), 0 0 50px var(--accent-glow);
+        }
+        .plan-card.premium:hover {
+            border-color: rgba(139,92,246,0.25);
+            box-shadow: 0 8px 50px rgba(0,0,0,0.4), 0 0 50px var(--purple-glow);
+        }
+
+        /* Popular badge glow */
+        .badge-glow {
+            animation: badgePulse 2.5s ease-in-out infinite;
+        }
+        @keyframes badgePulse {
+            0%, 100% { box-shadow: 0 0 10px var(--accent-glow); }
+            50% { box-shadow: 0 0 22px var(--accent-glow), 0 0 40px rgba(229,9,20,0.1); }
+        }
+
+        /* Standard card always has subtle glow */
+        .plan-card.standard {
+            border-color: rgba(229,9,20,0.12);
+            box-shadow: 0 0 30px rgba(229,9,20,0.06);
+        }
+
+        /* Toggle switch */
+        .toggle-track {
+            width: 52px; height: 28px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            transition: background 0.35s ease, border-color 0.35s ease;
+            position: relative;
+        }
+        .toggle-track.active {
+            background: linear-gradient(135deg, var(--accent), var(--purple));
+            border-color: transparent;
+        }
+        .toggle-thumb {
+            position: absolute;
+            top: 3px; left: 3px;
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            background: #fff;
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        }
+        .toggle-track.active .toggle-thumb {
+            transform: translateX(24px);
+        }
+
+        /* Feature check icon */
+        .feat-check {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        /* Gradient buttons */
+        .btn-cyan {
+            background: linear-gradient(135deg, var(--cyan), #0284c7);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .btn-cyan:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 25px var(--cyan-glow), 0 6px 25px rgba(0,0,0,0.3);
+        }
+        .btn-cyan:active { transform: scale(0.98); }
+
+        .btn-red {
+            background: linear-gradient(135deg, var(--accent), #dc2626);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .btn-red:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 28px var(--accent-glow), 0 0 50px rgba(229,9,20,0.1), 0 6px 25px rgba(0,0,0,0.3);
+        }
+        .btn-red:active { transform: scale(0.98); }
+
+        .btn-purple {
+            background: linear-gradient(135deg, var(--purple), #7c3aed);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .btn-purple:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 28px var(--purple-glow), 0 0 50px rgba(139,92,246,0.1), 0 6px 25px rgba(0,0,0,0.3);
+        }
+        .btn-purple:active { transform: scale(0.98); }
+
+        /* Fade-in on scroll */
+        .fade-up {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.7s ease, transform 0.7s ease;
+        }
+        .fade-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .fade-up.d1 { transition-delay: 0.1s; }
+        .fade-up.d2 { transition-delay: 0.2s; }
+        .fade-up.d3 { transition-delay: 0.3s; }
+        .fade-up.d4 { transition-delay: 0.35s; }
+
+        /* Price number transition */
+        .price-num {
+            display: inline-block;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+        .price-num.switching {
+            opacity: 0;
+            transform: translateY(-8px);
+        }
+
+        /* Payment input */
+        .pay-input {
+            background: rgba(255,255,255,0.03);
+            border: 1.5px solid rgba(255,255,255,0.06);
+            transition: border-color 0.35s ease, box-shadow 0.35s ease, background 0.3s ease;
+            outline: none;
+        }
+        .pay-input:focus {
+            border-color: var(--accent);
+            background: rgba(255,255,255,0.05);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        /* Link underline animation */
+        .link-line { position: relative; display: inline-block; }
+        .link-line::after {
+            content: '';
+            position: absolute;
+            bottom: -2px; left: 0;
+            width: 0; height: 1px;
+            background: rgba(255,255,255,0.4);
+            transition: width 0.35s ease;
+        }
+        .link-line:hover::after { width: 100%; }
+
+        /* Focus visible */
+        *:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+            border-radius: 8px;
+        }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    </style>
+</head>
+<body class="min-h-screen relative">
+
+    <!-- Background atmosphere -->
+    <div class="orb orb-1" aria-hidden="true"></div>
+    <div class="orb orb-2" aria-hidden="true"></div>
+    <div class="orb orb-3" aria-hidden="true"></div>
+    <div class="noise" aria-hidden="true"></div>
+
+    <!-- ========== NAVBAR ========== -->
+    <nav class="relative z-10 glass border-b border-white/[0.04]" style="backdrop-filter: blur(30px);">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
+            <a href="#" class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, var(--accent), var(--purple));">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                        <path d="M8 5.14v13.72a.5.5 0 0 0 .75.43l11.5-6.86a.5.5 0 0 0 0-.86L8.75 4.71a.5.5 0 0 0-.75.43Z" fill="#fff"/>
+                    </svg>
+                </div>
+                <span class="font-bold text-sm tracking-wide">STREAMVAULT</span>
+            </a>
+            <a href="#" class="text-xs font-medium transition-colors duration-300" style="color: var(--muted);" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--muted)'">
+                Sign In
+            </a>
+        </div>
+    </nav>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <main class="relative z-10">
+
+        <!-- Header -->
+        <section class="pt-16 sm:pt-20 pb-10 sm:pb-14 px-4 text-center">
+            <div class="fade-up">
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass text-[11px] font-medium mb-6" style="color: var(--muted);">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    Unlimited streaming starting at $4.99/mo
+                </div>
+            </div>
+            <h1 class="fade-up d1 text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight mb-4">
+                Choose Your Plan
+            </h1>
+            <p class="fade-up d2 text-sm sm:text-base max-w-md mx-auto leading-relaxed" style="color: var(--muted);">
+                Upgrade to unlock the full premium streaming experience
+            </p>
+        </section>
+
+        <!-- Billing Toggle -->
+        <section class="px-4 pb-10 sm:pb-14">
+            <div class="fade-up d3 flex items-center justify-center gap-4">
+                <span id="monthlyLabel" class="text-sm font-semibold transition-colors duration-300">Monthly</span>
+                <div id="billingToggle" class="toggle-track" onclick="toggleBilling()" role="switch" aria-checked="false" aria-label="Toggle yearly billing" tabindex="0">
+                    <div class="toggle-thumb"></div>
+                </div>
+                <span id="yearlyLabel" class="text-sm font-medium transition-colors duration-300" style="color: var(--dim);">
+                    Yearly
+                    <span class="ml-1.5 inline-block px-2 py-0.5 text-[10px] font-bold rounded-full" style="background: rgba(34,197,94,0.12); color: var(--green);">SAVE 40%</span>
+                </span>
+            </div>
+        </section>
+
+        <!-- Pricing Cards -->
+        <section class="px-4 pb-16 sm:pb-24">
+            <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
+
+                <!-- BASIC PLAN -->
+                <div class="fade-up d2 plan-card basic glass rounded-3xl p-7 sm:p-8 flex flex-col relative">
+                    <!-- Plan icon -->
+                    <div class="w-11 h-11 rounded-2xl flex items-center justify-center mb-5" style="background: rgba(6,182,212,0.08); border: 1px solid rgba(6,182,212,0.12);">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="3" width="20" height="14" rx="2"/>
+                            <line x1="8" y1="21" x2="16" y2="21"/>
+                            <line x1="12" y1="17" x2="12" y2="21"/>
+                        </svg>
+                    </div>
+                    <!-- Plan name -->
+                    <h3 class="text-lg font-bold mb-1">Basic</h3>
+                    <p class="text-xs mb-6" style="color: var(--dim);">Great for casual viewing</p>
+                    <!-- Price -->
+                    <div class="mb-7">
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-3xl sm:text-4xl font-extrabold price-num" data-plan="basic" data-type="monthly">$4.99</span>
+                            <span class="text-xs font-medium price-period" style="color: var(--dim);">/month</span>
+                        </div>
+                        <p class="text-[11px] mt-1.5 yearly-note hidden" style="color: var(--green);">Billed $35.88 annually</p>
+                    </div>
+                    <!-- Features -->
+                    <ul class="space-y-3.5 mb-8 flex-1">
+                        <li class="flex items-start gap-2.5 text-sm" style="color: var(--muted);">
+                            <svg class="feat-check shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            SD quality streaming
+                        </li>
+                        <li class="flex items-start gap-2.5 text-sm" style="color: var(--muted);">
+                            <svg class="feat-check shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Watch on 1 device
+                        </li>
+                        <li class="flex items-start gap-2.5 text-sm" style="color: var(--muted);">
+                            <svg class="feat-check shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Ad-supported content
+                        </li>
+                        <li class="flex items-start gap-2.5 text-sm" style="color: var(--dim);">
+                            <svg class="shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            No offline downloads
+                        </li>
+                        <li class="flex items-start gap-2.5 text-sm" style="color: var(--dim);">
+                            <svg class="shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            No priority support
+                        </li>
+                    </ul>
+                    <!-- CTA -->
+                    <button onclick="selectPlan('basic')" class="btn-cyan w-full py-3.5 rounded-2xl text-sm font-semibold text-white cursor-pointer border-0">
+                        Get Started
+                    </button>
+                </div>
+
+                <!-- STANDARD PLAN (Recommended) -->
+                <div class="fade-up d3 plan-card standard glass rounded-3xl p-7 sm:p-8 flex flex-col relative md:-mt-4 md:mb-[-16px]" style="border-color: rgba(229,9,20,0.12);">
+                    <!-- Badge -->
+                    <div class="badge-glow absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] font-bold tracking-wide" style="background: linear-gradient(135deg, var(--accent), #dc2626); color: #fff;">
+                        MOST POPULAR
+                    </div>
+                    <!-- Plan icon -->
+                    <div class="w-11 h-11 rounded-2xl flex items-center justify-center mb-5 mt-1" style="background: rgba(229,9,20,0.08); border: 1px solid rgba(229,9,20,0.12);">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold mb-1">Standard</h3>
+                    <p class="text-xs mb-6" style="color: var(--dim);">Best value for most viewers</p>
+                    <!-- Price -->
+                    <div class="mb-7">
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-3xl sm:text-4xl font-extrabold price-num" data-plan="standard" data-type="monthly">$9.99</span>
+                            <span class="text-xs font-medium price-period" style="color: var(--dim);">/month</span>
+                        </div>
+                        <p class="text-[11px] mt-1.5 yearly-note hidden" style="color: var(--green);">Billed $71.88 annually</p>
+                    </div>
+                    <!-- Features -->
+                    <ul class="space-y-3.5 mb-8 flex-1">
+                        <li class="flex items-start gap-2.5 text-sm" style="color: var(--muted);">
+                            <svg class="feat-check shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Full HD 1080p streaming
+                        </li>
+                        <li class="flex items-start gap-2.5 text-sm" style="color: var(--muted);">
+                            <svg class="feat-check shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Watch on 2 devices
+                        </li>
+                        <li class="flex items-start gap-2.5 text-sm" style="color: var(--muted);">
+                            <svg class="feat-check shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Completely ad-free
+                        </li>
+                        <li class="flex items-start gap-2.5 text-sm" style="color: var(--muted);">
+                            <svg class="feat-check shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Download support
+                        </li>
+                        <li class="flex items-start gap-2.5 text-sm" style="color: var(--dim);">
+                            <svg class="shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            No priority support
+                        </li>
+                    </ul>
+                    <button onclick="selectPlan('standard')" class="btn-red w-full py-3.5 rounded-2xl text-sm font-semibold text-white cursor-pointer border-0">
+                        Upgrade Now
+                    </button>
+                </div>
+
+                <!-- PREMIUM PLAN -->
+                <div class="fade-up d4 plan-card premium glass rounded-3xl p-7 sm:p-8 flex flex-col relative">
+                    <!-- Plan icon -->
+                    <div class="w-11 h-11 rounded-2xl flex items-center justify-center mb-5" style="background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.12);">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5"/>
+                            <path d="M2 12l10 5 10-5"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold mb-1">Premium</h3>
+                    <p class="text-xs mb-6" style="color: var(--dim);">The ultimate experience</p>
+                    <!-- Price -->
+                    <div class="mb-7">
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-3xl sm:text-4xl font-extrabold price-num" data-plan="premium" data-type="monthly">$17.99</span>
+                            <span class="text-xs font-medium price-period" style="color: var(--dim);">/month</span>
+                        </div>
+                        <p class="text-[11px] mt-1.5 yearly-note hidden" style="color: var(--green);">Billed $129.53 annually</p>
+                    </div>
+                    <!-- Features -->
+                    <ul class="space-y-3.5 mb-8 flex-1">
+                        <li class="flex items-start gap-2.5 text-sm" style="color: var(--muted);">
+                            <svg class="feat-check shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            4K Ultra HD + HDR
+                        </li>
+                        <li class="flex items-start gap-2.5 text-sm" style="color: var(--muted);">
+                            <svg class="feat-check shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Watch on 4 devices
+                        </li>
+                        <li class="flex items-start gap-2.5 text-sm" style="color: var(--muted);">
+                            <svg class="feat-check shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Ad-free + no interruptions
+                        </li>
+                        <li class="flex items-start gap-2.5 text-sm" style="color: var(--muted);">
+                            <svg class="feat-check shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Unlimited offline downloads
+                        </li>
+                        <li class="flex items-start gap-2.5 text-sm" style="color: var(--muted);">
+                            <svg class="feat-check shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Priority 24/7 support
+                        </li>
+                    </ul>
+                    <button onclick="selectPlan('premium')" class="btn-purple w-full py-3.5 rounded-2xl text-sm font-semibold text-white cursor-pointer border-0">
+                        Get Premium
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ========== PAYMENT SECTION ========== -->
+        <section id="paymentSection" class="hidden px-4 pb-20">
+            <div class="max-w-lg mx-auto">
+                <div class="glass rounded-3xl p-7 sm:p-9 fade-up" id="paymentCard">
+
+                    <!-- Selected plan display -->
+                    <div class="flex items-center justify-between mb-7 pb-5 border-b border-white/[0.06]">
+                        <div>
+                            <p class="text-xs font-medium mb-0.5" style="color: var(--dim);">Selected Plan</p>
+                            <p class="text-base font-bold" id="selectedPlanName">Standard</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs font-medium mb-0.5" style="color: var(--dim);">Billed</p>
+                            <p class="text-base font-bold" id="selectedPlanPrice">$9.99/mo</p>
+                        </div>
+                    </div>
+
+                    <!-- Card number -->
+                    <div class="mb-4">
+                        <label for="cardNum" class="block text-xs font-medium mb-2" style="color: var(--muted);">Card Number</label>
+                        <div class="relative">
+                            <div class="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" style="color: var(--dim);">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="1" y="4" width="22" height="16" rx="2"/>
+                                    <line x1="1" y1="10" x2="23" y2="10"/>
+                                </svg>
+                            </div>
+                            <input id="cardNum" type="text" placeholder="4242 4242 4242 4242" maxlength="19" class="pay-input w-full pl-12 pr-4 py-3.5 rounded-2xl text-sm text-white placeholder-white/15 font-medium tracking-wider" oninput="formatCard(this)">
+                        </div>
+                    </div>
+
+                    <!-- Expiry + CVV row -->
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="cardExp" class="block text-xs font-medium mb-2" style="color: var(--muted);">Expiry Date</label>
+                            <input id="cardExp" type="text" placeholder="MM / YY" maxlength="7" class="pay-input w-full px-4 py-3.5 rounded-2xl text-sm text-white placeholder-white/15 font-medium tracking-wider" oninput="formatExpiry(this)">
+                        </div>
+                        <div>
+                            <label for="cardCvv" class="block text-xs font-medium mb-2" style="color: var(--muted);">CVV</label>
+                            <input id="cardCvv" type="text" placeholder="123" maxlength="4" class="pay-input w-full px-4 py-3.5 rounded-2xl text-sm text-white placeholder-white/15 font-medium tracking-wider" oninput="this.value=this.value.replace(/\D/g,'')">
+                        </div>
+                    </div>
+
+                    <!-- Name on card -->
+                    <div class="mb-6">
+                        <label for="cardName" class="block text-xs font-medium mb-2" style="color: var(--muted);">Name on Card</label>
+                        <input id="cardName" type="text" placeholder="Alex Rivera" class="pay-input w-full px-4 py-3.5 rounded-2xl text-sm text-white placeholder-white/15">
+                    </div>
+
+                    <!-- Pay button -->
+                    <button id="payBtn" onclick="handlePayment()" class="btn-red w-full py-4 rounded-2xl text-sm font-bold text-white cursor-pointer border-0 flex items-center justify-center gap-2 mb-5">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
+                        <span id="payBtnText">Pay $9.99</span>
+                    </button>
+
+                    <!-- Trust indicators -->
+                    <div class="flex items-center justify-center gap-5">
+                        <div class="flex items-center gap-1.5 text-[11px]" style="color: var(--dim);">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="3"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                            </svg>
+                            SSL Encrypted
+                        </div>
+                        <div class="flex items-center gap-1.5 text-[11px]" style="color: var(--dim);">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            </svg>
+                            Secure Payment
+                        </div>
+                        <div class="flex items-center gap-1.5 text-[11px]" style="color: var(--dim);">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            Cancel Anytime
+                        </div>
+                    </div>
+
+                    <!-- Back link -->
+                    <div class="text-center mt-5">
+                        <a href="#" onclick="event.preventDefault(); hidePayment();" class="link-line text-xs font-medium transition-colors duration-300" style="color: var(--muted);" onmouseover="this.style.color='rgba(255,255,255,0.7)'" onmouseout="this.style.color='var(--muted)'">
+                            <span class="inline-flex items-center gap-1.5">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                                Back to plans
+                            </span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== SUCCESS TOAST ========== -->
+        <div id="toast" class="fixed top-6 left-1/2 -translate-x-1/2 z-[100] glass-strong px-6 py-3.5 rounded-2xl text-sm font-medium shadow-2xl shadow-black/50 transition-all duration-400 translate-y-[-20px] opacity-0 pointer-events-none flex items-center gap-2.5" style="backdrop-filter: blur(30px); background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span id="toastMsg" style="color: var(--green);"></span>
+        </div>
+
+    </main>
+
+    <!-- ========== FOOTER ========== -->
+    <footer class="relative z-10 border-t border-white/[0.04]">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-md flex items-center justify-center" style="background: linear-gradient(135deg, var(--accent), var(--purple));">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M8 5.14v13.72a.5.5 0 0 0 .75.43l11.5-6.86a.5.5 0 0 0 0-.86L8.75 4.71a.5.5 0 0 0-.75.43Z" fill="#fff"/></svg>
+                    </div>
+                    <span class="text-xs font-medium" style="color: var(--dim);">STREAMVAULT</span>
+                </div>
+                <div class="flex items-center gap-5 text-[11px]" style="color: var(--dim);">
+                    <a href="#" class="hover:text-white/50 transition-colors">Terms</a>
+                    <a href="#" class="hover:text-white/50 transition-colors">Privacy</a>
+                    <a href="#" class="hover:text-white/50 transition-colors">Help</a>
+                    <a href="#" class="hover:text-white/50 transition-colors">Contact</a>
+                </div>
+                <p class="text-[10px]" style="color: rgba(255,255,255,0.1);">2025 StreamVault Inc. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ============================
+        // Pricing data
+        // ============================
+        const plans = {
+            basic:    { monthly: '$4.99',  yearly: '$2.99',  yearlyTotal: '$35.88',  name: 'Basic' },
+            standard: { monthly: '$9.99',  yearly: '$5.99',  yearlyTotal: '$71.88',  name: 'Standard' },
+            premium:  { monthly: '$17.99', yearly: '$10.79', yearlyTotal: '$129.53', name: 'Premium' },
+        };
+
+        let isYearly = false;
+        let selectedPlan = 'standard';
+
+        // ============================
+        // Billing toggle
+        // ============================
+        function toggleBilling() {
+            isYearly = !isYearly;
+            const toggle = document.getElementById('billingToggle');
+            const monthlyLabel = document.getElementById('monthlyLabel');
+            const yearlyLabel = document.getElementById('yearlyLabel');
+
+            toggle.classList.toggle('active', isYearly);
+            toggle.setAttribute('aria-checked', isYearly);
+
+            monthlyLabel.style.color = isYearly ? 'var(--dim)' : '#fff';
+            monthlyLabel.style.fontWeight = isYearly ? '500' : '600';
+            yearlyLabel.style.color = isYearly ? '#fff' : 'var(--dim)';
+            yearlyLabel.querySelector('span:first-child') || null;
+
+            // Update prices with animation
+            document.querySelectorAll('.price-num').forEach(el => {
+                const plan = el.dataset.plan;
+                const price = isYearly ? plans[plan].yearly : plans[plan].monthly;
+
+                // Animate out
+                el.classList.add('switching');
+
+                setTimeout(() => {
+                    el.textContent = price;
+                    el.dataset.type = isYearly ? 'yearly' : 'monthly';
+                    // Animate in
+                    el.classList.remove('switching');
+                }, 250);
+            });
+
+            // Update period labels
+            document.querySelectorAll('.price-period').forEach(el => {
+                el.textContent = isYearly ? '/month' : '/month';
+            });
+
+            // Toggle yearly notes
+            document.querySelectorAll('.yearly-note').forEach(el => {
+                el.classList.toggle('hidden', !isYearly);
+            });
+
+            // Update payment section if visible
+            if (!document.getElementById('paymentSection').classList.contains('hidden')) {
+                updatePaymentDisplay();
+            }
+        }
+
+        // Keyboard support for toggle
+        document.getElementById('billingToggle').addEventListener('keydown', function(e) {
+            if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                toggleBilling();
+            }
+        });
+
+        // ============================
+        // Plan selection → show payment
+        // ============================
+        function selectPlan(plan) {
+            selectedPlan = plan;
+            updatePaymentDisplay();
+
+            // Show payment section with animation
+            const section = document.getElementById('paymentSection');
+            section.classList.remove('hidden');
+
+            // Trigger fade-in
+            const card = document.getElementById('paymentCard');
+            card.classList.remove('visible');
+            card.offsetHeight; // force reflow
+            card.classList.add('visible');
+
+            // Scroll to payment
+            setTimeout(() => {
+                section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
+
+        function updatePaymentDisplay() {
+            const data = plans[selectedPlan];
+            const price = isYearly ? data.yearly : data.monthly;
+            const suffix = isYearly ? '/mo (yearly)' : '/mo';
+
+            document.getElementById('selectedPlanName').textContent = data.name;
+            document.getElementById('selectedPlanPrice').textContent = price + suffix;
+            document.getElementById('payBtnText').textContent = 'Pay ' + price;
+
+            // Update button color based on plan
+            const payBtn = document.getElementById('payBtn');
+            payBtn.className = payBtn.className.replace(/btn-\w+/g, '');
+            if (selectedPlan === 'basic') payBtn.classList.add('btn-cyan');
+            else if (selectedPlan === 'standard') payBtn.classList.add('btn-red');
+            else payBtn.classList.add('btn-purple');
+            payBtn.classList.add('w-full', 'py-4', 'rounded-2xl', 'text-sm', 'font-bold', 'text-white', 'cursor-pointer', 'border-0', 'flex', 'items-center', 'justify-center', 'gap-2', 'mb-5');
+        }
+
+        function hidePayment() {
+            const section = document.getElementById('paymentSection');
+            section.classList.add('hidden');
+            // Scroll back to plans
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ============================
+        // Card formatting
+        // ============================
+        function formatCard(input) {
+            let v = input.value.replace(/\D/g, '').slice(0, 16);
+            let formatted = v.replace(/(\d{4})(?=\d)/g, '$1 ');
+            input.value = formatted;
+        }
+
+        function formatExpiry(input) {
+            let v = input.value.replace(/\D/g, '').slice(0, 4);
+            if (v.length >= 2) {
+                v = v.slice(0, 2) + ' / ' + v.slice(2);
+            }
+            input.value = v;
+        }
+
+        // ============================
+        // Payment handler (mock)
+        // ============================
+        function handlePayment() {
+            const btn = document.getElementById('payBtn');
+            const btnText = document.getElementById('payBtnText');
+
+            // Simple validation
+            const num = document.getElementById('cardNum').value.replace(/\s/g, '');
+            const exp = document.getElementById('cardExp').value;
+            const cvv = document.getElementById('cardCvv').value;
+            const name = document.getElementById('cardName').value.trim();
+
+            if (num.length < 16 || !exp || cvv.length < 3 || !name) {
+                showToastError('Please fill in all payment fields');
+                return;
+            }
+
+            // Loading state
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+            btn.style.cursor = 'not-allowed';
+            btnText.innerHTML = '<span class="spinner" style="border-top-color:#fff;border:2px solid rgba(255,255,255,0.3);display:inline-block;width:16px;height:16px;border-radius:50%;animation:spin 0.6s linear infinite;"></span> Processing...';
+
+            // Simulate payment
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.style.opacity = '';
+                btn.style.cursor = '';
+                btnText.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Payment Successful`;
+
+                showToast('Welcome to StreamVault ' + plans[selectedPlan].name + '!');
+
+                // Reset after delay
+                setTimeout(() => {
+                    btnText.textContent = 'Pay ' + (isYearly ? plans[selectedPlan].yearly : plans[selectedPlan].monthly);
+                }, 3000);
+            }, 2000);
+        }
+
+        // ============================
+        // Toast notifications
+        // ============================
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = msg;
+            toast.style.background = 'rgba(34,197,94,0.1)';
+            toast.style.borderColor = 'rgba(34,197,94,0.2)';
+            toast.querySelector('svg').setAttribute('stroke', 'var(--green)');
+            document.getElementById('toastMsg').style.color = 'var(--green)';
+            toast.style.transform = 'translate(-50%, 0)';
+            toast.style.opacity = '1';
+            toast.style.pointerEvents = 'auto';
+            setTimeout(() => {
+                toast.style.transform = 'translate(-50%, -20px)';
+                toast.style.opacity = '0';
+                toast.style.pointerEvents = 'none';
+            }, 3500);
+        }
+
+        function showToastError(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = msg;
+            toast.style.background = 'rgba(229,9,20,0.1)';
+            toast.style.borderColor = 'rgba(229,9,20,0.2)';
+            toast.querySelector('svg').setAttribute('stroke', 'var(--accent)');
+            document.getElementById('toastMsg').style.color = 'var(--accent)';
+            toast.querySelector('svg').innerHTML = '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>';
+            toast.style.transform = 'translate(-50%, 0)';
+            toast.style.opacity = '1';
+            toast.style.pointerEvents = 'auto';
+            setTimeout(() => {
+                toast.style.transform = 'translate(-50%, -20px)';
+                toast.style.opacity = '0';
+                toast.style.pointerEvents = 'none';
+                // Reset icon
+                toast.querySelector('svg').innerHTML = '<polyline points="20 6 9 17 4 12"/>';
+            }, 3500);
+        }
+
+        // ============================
+        // Scroll-triggered fade-in
+        // ============================
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+
+        document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+        // Also observe the payment card for when it appears
+        const paymentObs = new MutationObserver(() => {
+            const pc = document.getElementById('paymentCard');
+            if (pc && !document.getElementById('paymentSection').classList.contains('hidden')) {
+                pc.classList.remove('visible');
+                pc.offsetHeight;
+                pc.classList.add('visible');
+            }
+        });
+        paymentObs.observe(document.getElementById('paymentSection'), { attributes: true, attributeFilter: ['class'] });
+
+        // Spinner keyframes (injected for payment button)
+        const spinStyle = document.createElement('style');
+        spinStyle.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+        document.head.appendChild(spinStyle);
+    </script>
+
+</body>
+</html>
