@@ -1,0 +1,729 @@
+<!-- AI Generated Streaming Signup UI -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamVault — Create Account</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { outfit: ['Outfit', 'sans-serif'] },
+                    colors: {
+                        vault: {
+                            bg: '#06060c',
+                            surface: '#0e0e18',
+                            card: '#141420',
+                            border: '#1e1e30',
+                            muted: '#6b6b8a',
+                            text: '#c8c8e0',
+                            light: '#eeeef5',
+                            accent: '#e8443a',
+                            accentHover: '#ff5a50',
+                            purple: '#a855f7',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --accent: #e8443a;
+            --accent-hover: #ff5a50;
+            --purple: #a855f7;
+            --bg: #06060c;
+            --surface: #0e0e18;
+            --card: #141420;
+            --border: #1e1e30;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: #c8c8e0;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+        ::-webkit-scrollbar { display: none; }
+
+        /* === CINEMATIC BACKGROUND === */
+        .cinema-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+        }
+        .cinema-bg img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: blur(10px) brightness(0.25) saturate(1.3);
+            transform: scale(1.15);
+        }
+        .cinema-overlay {
+            background:
+                linear-gradient(180deg, rgba(6,6,12,0.6) 0%, rgba(6,6,12,0.35) 40%, rgba(6,6,12,0.9) 100%),
+                radial-gradient(ellipse at 30% 20%, rgba(168,85,247,0.07) 0%, transparent 55%),
+                radial-gradient(ellipse at 70% 70%, rgba(232,68,58,0.06) 0%, transparent 55%);
+        }
+
+        /* === FLOATING PARTICLES === */
+        @keyframes drift {
+            0% { transform: translateY(105vh) translateX(0px) scale(0); opacity: 0; }
+            8% { opacity: 0.8; transform: translateY(90vh) translateX(5px) scale(1); }
+            92% { opacity: 0.4; }
+            100% { transform: translateY(-5vh) translateX(30px) scale(0.6); opacity: 0; }
+        }
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: drift linear infinite;
+        }
+
+        /* === GLASS CARD === */
+        .glass-card {
+            background: rgba(14, 14, 24, 0.4);
+            backdrop-filter: blur(48px) saturate(1.4);
+            -webkit-backdrop-filter: blur(48px) saturate(1.4);
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow:
+                0 0 0 1px rgba(255,255,255,0.02) inset,
+                0 40px 100px -25px rgba(0,0,0,0.8),
+                0 0 150px -50px rgba(232,68,58,0.06),
+                0 0 150px -50px rgba(168,85,247,0.06);
+        }
+
+        /* Card hover glow border */
+        .glow-ring { position: relative; }
+        .glow-ring::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: 1.25rem;
+            background: linear-gradient(135deg, rgba(232,68,58,0.12), transparent 35%, transparent 65%, rgba(168,85,247,0.12));
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+        .glow-ring:hover::before { opacity: 1; }
+
+        /* === GLASS INPUTS === */
+        .glass-input-wrap {
+            position: relative;
+        }
+        .glass-input {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .glass-input:focus-within {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(232,68,58,0.35);
+            box-shadow:
+                0 0 0 3px rgba(232,68,58,0.07),
+                0 0 30px -10px rgba(232,68,58,0.12);
+        }
+        .glass-input:focus-within .input-icon { color: var(--accent-hover); }
+        .glass-input.error-state {
+            border-color: rgba(232,68,58,0.5);
+            box-shadow: 0 0 0 3px rgba(232,68,58,0.08);
+        }
+        .glass-input input {
+            background: transparent;
+            outline: none;
+            color: #eeeef5;
+            width: 100%;
+            font-family: 'Outfit', sans-serif;
+        }
+        .glass-input input::placeholder { color: #4a4a65; }
+
+        /* Floating label */
+        .float-label {
+            position: absolute;
+            left: 46px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.875rem;
+            color: #4a4a65;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+            background: transparent;
+            padding: 0 4px;
+        }
+        .glass-input:focus-within .float-label,
+        .glass-input.has-value .float-label {
+            top: -1px;
+            left: 12px;
+            font-size: 0.6875rem;
+            color: var(--accent-hover);
+            background: linear-gradient(180deg, transparent 48%, rgba(14,14,24,0.9) 52%);
+        }
+
+        /* === PASSWORD TOGGLE === */
+        .pw-toggle {
+            cursor: pointer;
+            color: #4a4a65;
+            transition: color 0.2s;
+        }
+        .pw-toggle:hover { color: #c8c8e0; }
+
+        /* === PASSWORD STRENGTH BAR === */
+        .strength-track {
+            height: 3px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .strength-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1), background 0.5s ease;
+            width: 0%;
+        }
+        .strength-label {
+            font-size: 0.6875rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        /* === GRADIENT BUTTON === */
+        .btn-gradient {
+            background: linear-gradient(135deg, #e8443a 0%, #c0392b 45%, #a855f7 100%);
+            background-size: 200% 200%;
+            transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-gradient::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.12) 50%, transparent 100%);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+        .btn-gradient:hover::before { transform: translateX(100%); }
+        .btn-gradient:hover {
+            background-position: 100% 0;
+            box-shadow: 0 10px 40px -8px rgba(232,68,58,0.5), 0 0 60px -20px rgba(168,85,247,0.3);
+            transform: scale(1.02);
+        }
+        .btn-gradient:active { transform: scale(0.98); }
+        .btn-gradient:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        .btn-gradient:disabled::before { display: none; }
+
+        /* === GOOGLE BUTTON === */
+        .btn-google {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.07);
+            transition: all 0.3s ease;
+        }
+        .btn-google:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.14);
+            transform: translateY(-1px);
+        }
+
+        /* === CUSTOM CHECKBOX === */
+        .custom-check {
+            width: 18px;
+            height: 18px;
+            border: 1.5px solid rgba(255,255,255,0.15);
+            border-radius: 5px;
+            background: rgba(255,255,255,0.03);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .custom-check.checked {
+            background: linear-gradient(135deg, #e8443a, #a855f7);
+            border-color: transparent;
+        }
+        .custom-check svg {
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .custom-check.checked svg {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* === ANIMATED LINK UNDERLINE === */
+        .link-anim {
+            position: relative;
+            text-decoration: none;
+        }
+        .link-anim::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: linear-gradient(90deg, #e8443a, #a855f7);
+            transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .link-anim:hover::after { width: 100%; }
+
+        /* === DIVIDER === */
+        .divider-line {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
+        }
+
+        /* === CARD ENTRANCE === */
+        @keyframes card-enter {
+            0% { opacity: 0; transform: translateY(50px) scale(0.95); filter: blur(10px); }
+            100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+        .card-animate {
+            animation: card-enter 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+        }
+
+        /* === STAGGER CHILDREN === */
+        @keyframes item-fade {
+            0% { opacity: 0; transform: translateY(14px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .stagger > * {
+            animation: item-fade 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        .stagger > *:nth-child(1) { animation-delay: 0.45s; }
+        .stagger > *:nth-child(2) { animation-delay: 0.52s; }
+        .stagger > *:nth-child(3) { animation-delay: 0.59s; }
+        .stagger > *:nth-child(4) { animation-delay: 0.66s; }
+        .stagger > *:nth-child(5) { animation-delay: 0.73s; }
+        .stagger > *:nth-child(6) { animation-delay: 0.80s; }
+        .stagger > *:nth-child(7) { animation-delay: 0.87s; }
+        .stagger > *:nth-child(8) { animation-delay: 0.94s; }
+        .stagger > *:nth-child(9) { animation-delay: 1.01s; }
+        .stagger > *:nth-child(10) { animation-delay: 1.08s; }
+        .stagger > *:nth-child(11) { animation-delay: 1.15s; }
+        .stagger > *:nth-child(12) { animation-delay: 1.22s; }
+
+        /* === ERROR SHAKE === */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-6px); }
+            40% { transform: translateX(6px); }
+            60% { transform: translateX(-3px); }
+            80% { transform: translateX(3px); }
+        }
+        .shake { animation: shake 0.35s ease; }
+
+        /* === TOAST === */
+        @keyframes toast-in {
+            0% { transform: translateY(20px) scale(0.94); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        @keyframes toast-out {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-10px) scale(0.94); opacity: 0; }
+        }
+        .toast { animation: toast-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        .toast.hiding { animation: toast-out 0.3s ease both; }
+
+        /* === REDUCED MOTION === */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body class="font-outfit">
+
+    <!-- ======== CINEMATIC BACKGROUND ======== -->
+    <div class="cinema-bg" aria-hidden="true">
+        <img src="https://picsum.photos/seed/nebula-cinema-signup/1920/1080.jpg" alt="" loading="eager">
+        <div class="cinema-overlay absolute inset-0"></div>
+        <div id="particles" class="absolute inset-0 overflow-hidden"></div>
+    </div>
+
+    <!-- ======== MAIN LAYOUT ======== -->
+    <main class="relative z-10 min-h-screen flex items-center justify-center px-4 py-8 sm:py-12">
+        <div class="w-full max-w-[460px]">
+
+            <!-- ======== SIGNUP CARD ======== -->
+            <div class="glass-card glow-ring rounded-2xl p-7 sm:p-9 card-animate">
+
+                <div class="stagger">
+
+                    <!-- Logo -->
+                    <div class="flex justify-center mb-6">
+                        <div class="relative group cursor-pointer">
+                            <div class="absolute inset-0 bg-gradient-to-br from-vault-accent/20 to-vault-purple/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                            <svg width="46" height="46" viewBox="0 0 48 48" fill="none" class="relative transition-transform duration-300 group-hover:scale-110">
+                                <rect width="48" height="48" rx="14" fill="url(#logoGrad)"/>
+                                <path d="M19 14l14 10-14 10V14z" fill="white"/>
+                                <defs>
+                                    <linearGradient id="logoGrad" x1="0" y1="0" x2="48" y2="48">
+                                        <stop offset="0%" stop-color="#e8443a"/>
+                                        <stop offset="100%" stop-color="#a855f7"/>
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Title -->
+                    <div class="text-center mb-7">
+                        <h1 class="text-[26px] sm:text-[30px] font-800 text-white tracking-tight leading-tight">Create Your Account</h1>
+                        <p class="text-sm text-vault-muted mt-2 font-light">Join and start streaming instantly</p>
+                    </div>
+
+                    <!-- === FULL NAME === -->
+                    <div class="mb-3.5">
+                        <div class="glass-input glass-input-wrap flex items-center gap-3 rounded-2xl px-4 py-3.5" id="nameField">
+                            <svg class="input-icon flex-shrink-0 transition-colors duration-300" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a4a65" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            <input type="text" id="nameInput" placeholder=" " class="text-sm font-light peer" autocomplete="name" aria-label="Full name">
+                            <label class="float-label" for="nameInput">Full Name</label>
+                        </div>
+                        <p id="nameError" class="text-xs text-vault-accent mt-1 ml-1 hidden flex items-center gap-1">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            Please enter your full name
+                        </p>
+                    </div>
+
+                    <!-- === EMAIL === -->
+                    <div class="mb-3.5">
+                        <div class="glass-input glass-input-wrap flex items-center gap-3 rounded-2xl px-4 py-3.5" id="emailField">
+                            <svg class="input-icon flex-shrink-0 transition-colors duration-300" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a4a65" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="4" width="20" height="16" rx="2"/>
+                                <polyline points="22,4 12,13 2,4"/>
+                            </svg>
+                            <input type="email" id="emailInput" placeholder=" " class="text-sm font-light" autocomplete="email" aria-label="Email address">
+                            <label class="float-label" for="emailInput">Email Address</label>
+                        </div>
+                        <p id="emailError" class="text-xs text-vault-accent mt-1 ml-1 hidden flex items-center gap-1">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            Please enter a valid email address
+                        </p>
+                    </div>
+
+                    <!-- === PASSWORD === -->
+                    <div class="mb-1">
+                        <div class="glass-input glass-input-wrap flex items-center gap-3 rounded-2xl px-4 py-3.5" id="passwordField">
+                            <svg class="input-icon flex-shrink-0 transition-colors duration-300" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a4a65" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                <path d="M7 11V7a5 5 0 0110 0v4"/>
+                            </svg>
+                            <input type="password" id="passwordInput" placeholder=" " class="text-sm font-light" autocomplete="new-password" aria-label="Password" oninput="checkStrength(); checkHasValue('passwordField');">
+                            <label class="float-label" for="passwordInput">Password</label>
+                            <button type="button" class="pw-toggle flex-shrink-0" onclick="togglePw('passwordInput','eyeOpen1','eyeClosed1')" aria-label="Toggle password visibility">
+                                <svg id="eyeOpen1" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg id="eyeClosed1" class="hidden" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                            </button>
+                        </div>
+                        <!-- Password strength -->
+                        <div class="mt-2 px-1">
+                            <div class="strength-track">
+                                <div id="strengthFill" class="strength-fill"></div>
+                            </div>
+                            <div class="flex justify-between items-center mt-1">
+                                <span id="strengthLabel" class="strength-label text-vault-muted/60">&nbsp;</span>
+                            </div>
+                        </div>
+                        <p id="passwordError" class="text-xs text-vault-accent mt-0.5 ml-1 hidden flex items-center gap-1">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            Password must be at least 8 characters
+                        </p>
+                    </div>
+
+                    <!-- === CONFIRM PASSWORD === -->
+                    <div class="mb-5">
+                        <div class="glass-input glass-input-wrap flex items-center gap-3 rounded-2xl px-4 py-3.5" id="confirmField">
+                            <svg class="input-icon flex-shrink-0 transition-colors duration-300" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a4a65" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            </svg>
+                            <input type="password" id="confirmInput" placeholder=" " class="text-sm font-light" autocomplete="new-password" aria-label="Confirm password" oninput="checkHasValue('confirmField')">
+                            <label class="float-label" for="confirmInput">Confirm Password</label>
+                            <button type="button" class="pw-toggle flex-shrink-0" onclick="togglePw('confirmInput','eyeOpen2','eyeClosed2')" aria-label="Toggle confirm password visibility">
+                                <svg id="eyeOpen2" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg id="eyeClosed2" class="hidden" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                            </button>
+                        </div>
+                        <p id="confirmError" class="text-xs text-vault-accent mt-1 ml-1 hidden flex items-center gap-1">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            Passwords do not match
+                        </p>
+                    </div>
+
+                    <!-- === TERMS CHECKBOX === -->
+                    <div class="flex items-start gap-3 mb-6">
+                        <div class="custom-check mt-0.5" id="termsCheck" onclick="toggleCheck()" role="checkbox" aria-checked="false" tabindex="0" aria-label="Agree to terms">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                        </div>
+                        <p class="text-xs text-vault-muted leading-relaxed">
+                            I agree to the
+                            <a href="#" class="link-anim text-vault-text hover:text-vault-light transition-colors font-medium" onclick="showToast('Terms of Service page','info'); return false;">Terms of Service</a>
+                            and
+                            <a href="#" class="link-anim text-vault-text hover:text-vault-light transition-colors font-medium" onclick="showToast('Privacy Policy page','info'); return false;">Privacy Policy</a>
+                        </p>
+                    </div>
+
+                    <!-- === CREATE ACCOUNT BUTTON === -->
+                    <button type="button" class="btn-gradient w-full py-3.5 rounded-2xl text-white font-semibold text-sm tracking-wide flex items-center justify-center gap-2" onclick="handleSignup()" id="signupBtn">
+                        <span id="btnText">Create Account</span>
+                        <svg id="btnSpinner" class="hidden animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.25)" stroke-width="3"/>
+                            <path d="M12 2a10 10 0 019.95 9" stroke="white" stroke-width="3" stroke-linecap="round"/>
+                        </svg>
+                        <svg id="btnCheck" class="hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                    </button>
+
+                    <!-- === DIVIDER === -->
+                    <div class="flex items-center gap-4 my-5">
+                        <div class="divider-line flex-1"></div>
+                        <span class="text-[0.65rem] text-vault-muted/50 font-medium uppercase tracking-[0.15em]">or continue with</span>
+                        <div class="divider-line flex-1"></div>
+                    </div>
+
+                    <!-- === GOOGLE BUTTON === -->
+                    <button type="button" class="btn-google w-full py-3 rounded-2xl text-vault-text font-medium text-sm flex items-center justify-center gap-2.5" onclick="showToast('Google sign-up initiated...','info')">
+                        <svg width="17" height="17" viewBox="0 0 24 24">
+                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                        </svg>
+                        Continue with Google
+                    </button>
+
+                    <!-- === SIGN IN LINK === -->
+                    <p class="text-center text-sm text-vault-muted mt-6">
+                        Already have an account?
+                        <a href="#" class="link-anim text-vault-light hover:text-white transition-colors font-semibold" onclick="showToast('Redirecting to sign in...','info'); return false;">Sign in</a>
+                    </p>
+
+                </div>
+            </div>
+
+            <!-- Bottom branding -->
+            <p class="text-center text-[0.6875rem] text-vault-muted/30 mt-7" style="animation: item-fade 0.5s 1.4s both;">&copy; 2024 StreamVault. All rights reserved.</p>
+
+        </div>
+    </main>
+
+    <!-- ======== TOAST CONTAINER ======== -->
+    <div id="toastContainer" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-3 pointer-events-none"></div>
+
+    <script>
+        // ====== FLOATING PARTICLES ======
+        function createParticles() {
+            const box = document.getElementById('particles');
+            for (let i = 0; i < 18; i++) {
+                const p = document.createElement('div');
+                p.classList.add('particle');
+                const size = Math.random() * 2.5 + 0.8;
+                const left = Math.random() * 100;
+                const dur = Math.random() * 18 + 12;
+                const delay = Math.random() * 18;
+                const isRed = Math.random() > 0.5;
+                const col = isRed ? 'rgba(232,68,58,0.25)' : 'rgba(168,85,247,0.2)';
+                p.style.cssText = `width:${size}px;height:${size}px;left:${left}%;background:${col};box-shadow:0 0 ${size*4}px ${col};animation-duration:${dur}s;animation-delay:${delay}s;`;
+                box.appendChild(p);
+            }
+        }
+
+        // ====== FLOATING LABEL TRACKING ======
+        // Detect if input has value for label float state
+        function checkHasValue(fieldId) {
+            const wrap = document.getElementById(fieldId);
+            const input = wrap.querySelector('input');
+            if (input.value.length > 0) {
+                wrap.classList.add('has-value');
+            } else {
+                wrap.classList.remove('has-value');
+            }
+        }
+        // Attach listeners to name and email
+        document.getElementById('nameInput').addEventListener('input', () => checkHasValue('nameField'));
+        document.getElementById('emailInput').addEventListener('input', () => checkHasValue('emailField'));
+
+        // ====== PASSWORD VISIBILITY ======
+        function togglePw(inputId, openId, closedId) {
+            const input = document.getElementById(inputId);
+            const openEl = document.getElementById(openId);
+            const closedEl = document.getElementById(closedId);
+            const show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            openEl.classList.toggle('hidden', show);
+            closedEl.classList.toggle('hidden', !show);
+        }
+
+        // ====== PASSWORD STRENGTH ======
+        function checkStrength() {
+            const pw = document.getElementById('passwordInput').value;
+            const fill = document.getElementById('strengthFill');
+            const label = document.getElementById('strengthLabel');
+
+            let score = 0;
+            if (pw.length >= 8) score++;
+            if (pw.length >= 12) score++;
+            if (/[A-Z]/.test(pw)) score++;
+            if (/[0-9]/.test(pw)) score++;
+            if (/[^A-Za-z0-9]/.test(pw)) score++;
+
+            // Map score 0-5 to weak/medium/strong
+            if (pw.length === 0) {
+                fill.style.width = '0%';
+                fill.style.background = 'transparent';
+                label.innerHTML = '&nbsp;';
+                label.style.color = 'rgba(107,107,138,0.6)';
+                return;
+            }
+
+            if (score <= 2) {
+                fill.style.width = '33%';
+                fill.style.background = '#e8443a';
+                label.textContent = 'Weak';
+                label.style.color = '#e8443a';
+            } else if (score <= 3) {
+                fill.style.width = '66%';
+                fill.style.background = '#f0a830';
+                label.textContent = 'Medium';
+                label.style.color = '#f0a830';
+            } else {
+                fill.style.width = '100%';
+                fill.style.background = 'linear-gradient(90deg, #22c55e, #16a34a)';
+                label.textContent = 'Strong';
+                label.style.color = '#22c55e';
+            }
+        }
+
+        // ====== CHECKBOX TOGGLE ======
+        let termsChecked = false;
+        function toggleCheck() {
+            termsChecked = !termsChecked;
+            const el = document.getElementById('termsCheck');
+            el.classList.toggle('checked', termsChecked);
+            el.setAttribute('aria-checked', termsChecked.toString());
+        }
+        document.getElementById('termsCheck').addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleCheck(); }
+        });
+
+        // ====== FIELD ERROR DISPLAY ======
+        function showFieldErr(fieldId, errId) {
+            const field = document.getElementById(fieldId);
+            const err = document.getElementById(errId);
+            field.classList.add('error-state');
+            err.classList.remove('hidden');
+            field.classList.add('shake');
+            setTimeout(() => field.classList.remove('shake'), 350);
+        }
+        function clearFieldErr(fieldId, errId) {
+            document.getElementById(fieldId).classList.remove('error-state');
+            document.getElementById(errId).classList.add('hidden');
+        }
+        // Live clear errors on typing
+        document.getElementById('nameInput').addEventListener('input', () => clearFieldErr('nameField','nameError'));
+        document.getElementById('emailInput').addEventListener('input', () => clearFieldErr('emailField','emailError'));
+        document.getElementById('passwordInput').addEventListener('input', () => clearFieldErr('passwordField','passwordError'));
+        document.getElementById('confirmInput').addEventListener('input', () => clearFieldErr('confirmField','confirmError'));
+
+        // ====== SIGNUP HANDLER ======
+        async function handleSignup() {
+            const name = document.getElementById('nameInput').value.trim();
+            const email = document.getElementById('emailInput').value.trim();
+            const pw = document.getElementById('passwordInput').value;
+            const confirm = document.getElementById('confirmInput').value;
+            const btn = document.getElementById('signupBtn');
+            const btnText = document.getElementById('btnText');
+            const spinner = document.getElementById('btnSpinner');
+            const check = document.getElementById('btnCheck');
+            let err = false;
+
+            // Validate name
+            if (name.length < 2) { showFieldErr('nameField','nameError'); err = true; }
+            // Validate email
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showFieldErr('emailField','emailError'); err = true; }
+            // Validate password length
+            if (pw.length < 8) { showFieldErr('passwordField','passwordError'); err = true; }
+            // Validate match
+            if (pw !== confirm || confirm.length === 0) { showFieldErr('confirmField','confirmError'); err = true; }
+            // Validate terms
+            if (!termsChecked) { showToast('Please agree to the Terms & Privacy Policy', 'error'); err = true; }
+
+            if (err) return;
+
+            // Loading state
+            btn.disabled = true;
+            btnText.textContent = 'Creating account...';
+            spinner.classList.remove('hidden');
+            check.classList.add('hidden');
+
+            // Simulate async
+            await new Promise(r => setTimeout(r, 2200));
+
+            // Success
+            spinner.classList.add('hidden');
+            check.classList.remove('hidden');
+            btnText.textContent = 'Account created!';
+            btn.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
+            showToast('Welcome to StreamVault! Redirecting...', 'success');
+
+            // Reset after demo pause
+            setTimeout(() => {
+                btn.disabled = false;
+                btnText.textContent = 'Create Account';
+                check.classList.add('hidden');
+                btn.style.background = '';
+            }, 3500);
+        }
+
+        // Enter key navigation
+        document.getElementById('nameInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('emailInput').focus(); });
+        document.getElementById('emailInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('passwordInput').focus(); });
+        document.getElementById('passwordInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('confirmInput').focus(); });
+        document.getElementById('confirmInput').addEventListener('keydown', e => { if (e.key === 'Enter') handleSignup(); });
+
+        // ====== TOAST SYSTEM ======
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const t = document.createElement('div');
+            const styles = {
+                success: 'border-green-500/30 bg-green-500/10',
+                error: 'border-red-500/30 bg-red-500/10',
+                info: 'border-white/10 bg-white/5',
+            };
+            const colors = { success: '#22c55e', error: '#e8443a', info: '#6b6b8a' };
+            const icons = {
+                success: '<circle cx="12" cy="12" r="10"/><polyline points="16 9 10.5 14.5 8 12"/>',
+                error: '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>',
+                info: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
+            };
+            t.className = `toast pointer-events-auto flex items-center gap-3 px-5 py-3 rounded-2xl border backdrop-blur-xl shadow-2xl shadow-black/50 ${styles[type]} max-w-sm`;
+            t.innerHTML = `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="${colors[type]}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icons[type]}</svg><span class="text-sm text-vault-light font-medium">${message}</span>`;
+            container.appendChild(t);
+            setTimeout(() => { t.classList.add('hiding'); setTimeout(() => t.remove(), 300); }, 3500);
+        }
+
+        // ====== INIT ======
+        document.addEventListener('DOMContentLoaded', createParticles);
+    </script>
+</body>
+</html>
