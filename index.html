@@ -1,0 +1,1012 @@
+<!-- AI Generated Streaming UI -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamVault — Premium Streaming</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { outfit: ['Outfit', 'sans-serif'] },
+                    colors: {
+                        vault: {
+                            bg: '#06060c',
+                            surface: '#0e0e18',
+                            card: '#141420',
+                            border: '#1e1e30',
+                            muted: '#6b6b8a',
+                            text: '#c8c8e0',
+                            light: '#eeeef5',
+                            accent: '#e8443a',
+                            accentHover: '#ff5a50',
+                            gold: '#f0a830',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --accent: #e8443a;
+            --accent-hover: #ff5a50;
+            --gold: #f0a830;
+            --bg: #06060c;
+            --surface: #0e0e18;
+            --card: #141420;
+            --border: #1e1e30;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: #c8c8e0;
+            overflow-x: hidden;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2a2a40; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3a3a55; }
+
+        /* Horizontal scroll snap */
+        .scroll-slider {
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .scroll-slider::-webkit-scrollbar { display: none; }
+        .scroll-slider > * { scroll-snap-align: start; }
+
+        /* Skeleton animation */
+        @keyframes shimmer {
+            0% { background-position: -400px 0; }
+            100% { background-position: 400px 0; }
+        }
+        .skeleton {
+            background: linear-gradient(90deg, #141420 25%, #1e1e30 50%, #141420 75%);
+            background-size: 800px 100%;
+            animation: shimmer 1.5s infinite linear;
+            border-radius: 0.75rem;
+        }
+
+        /* Play button pulse */
+        @keyframes pulse-ring {
+            0% { transform: scale(1); opacity: 0.6; }
+            100% { transform: scale(1.6); opacity: 0; }
+        }
+        .play-pulse::before {
+            content: '';
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            border: 2px solid var(--accent);
+            animation: pulse-ring 1.8s ease-out infinite;
+        }
+
+        /* Hero gradient overlay */
+        .hero-overlay {
+            background: linear-gradient(
+                to right,
+                rgba(6,6,12,0.95) 0%,
+                rgba(6,6,12,0.7) 40%,
+                rgba(6,6,12,0.2) 70%,
+                rgba(6,6,12,0.1) 100%
+            );
+        }
+        .hero-bottom {
+            background: linear-gradient(to top, var(--bg) 0%, transparent 100%);
+        }
+
+        /* Glassmorphism */
+        .glass {
+            background: rgba(14, 14, 24, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        /* Card hover glow */
+        .card-glow {
+            position: relative;
+            transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s ease;
+        }
+        .card-glow:hover {
+            transform: scale(1.05) translateY(-4px);
+            box-shadow: 0 20px 60px -15px rgba(232, 68, 58, 0.2), 0 0 0 1px rgba(232,68,58,0.1);
+        }
+
+        /* Modal animation */
+        .modal-backdrop {
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+        }
+        .modal-backdrop.hidden { opacity: 0; pointer-events: none; }
+        .modal-backdrop.hidden .modal-content { transform: scale(0.92) translateY(20px); opacity: 0; }
+
+        /* Fade in on scroll */
+        .fade-section {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .fade-section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Progress bar */
+        .progress-track { cursor: pointer; }
+        .progress-track:hover .progress-thumb { opacity: 1; transform: scale(1); }
+        .progress-thumb {
+            opacity: 0;
+            transform: scale(0);
+            transition: opacity 0.2s, transform 0.2s;
+        }
+
+        /* Category pill active */
+        .cat-pill.active {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 4px 20px -4px rgba(232, 68, 58, 0.5);
+        }
+
+        /* Ambient bg glow */
+        .ambient-glow {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            filter: blur(150px);
+            opacity: 0.06;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Sidebar */
+        .sidebar-link.active {
+            background: rgba(232, 68, 58, 0.1);
+            color: var(--accent-hover);
+            border-right: 3px solid var(--accent);
+        }
+
+        /* Video thumbnail aspect ratio */
+        .thumb-ratio {
+            aspect-ratio: 16/9;
+        }
+
+        /* Search focus */
+        .search-box:focus-within {
+            border-color: rgba(232, 68, 58, 0.5);
+            box-shadow: 0 0 0 3px rgba(232, 68, 58, 0.1);
+        }
+
+        /* Reduce motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body class="font-outfit">
+
+    <!-- Ambient background glows -->
+    <div class="ambient-glow" style="top:-200px; left:-100px; background: var(--accent);"></div>
+    <div class="ambient-glow" style="bottom:-200px; right:-100px; background: var(--gold);"></div>
+
+    <!-- ============ SIDEBAR (Mobile) ============ -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 glass transform -translate-x-full transition-transform duration-500 ease-out lg:hidden" style="background: rgba(6,6,12,0.95);">
+        <div class="flex flex-col h-full p-6">
+            <!-- Sidebar logo -->
+            <div class="flex items-center gap-3 mb-10">
+                <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
+                    <rect width="40" height="40" rx="10" fill="#e8443a"/>
+                    <path d="M16 12l12 8-12 8V12z" fill="white"/>
+                </svg>
+                <span class="text-xl font-bold text-vault-light tracking-tight">StreamVault</span>
+            </div>
+            <nav class="flex flex-col gap-1 flex-1">
+                <a href="#" class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-white/5">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    Home
+                </a>
+                <a href="#" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-vault-muted transition-all duration-200 hover:bg-white/5 hover:text-vault-light">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                    Trending
+                </a>
+                <a href="#" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-vault-muted transition-all duration-200 hover:bg-white/5 hover:text-vault-light">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                    Library
+                </a>
+                <a href="#" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-vault-muted transition-all duration-200 hover:bg-white/5 hover:text-vault-light">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    Watch Later
+                </a>
+                <a href="#" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-vault-muted transition-all duration-200 hover:bg-white/5 hover:text-vault-light">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                    Liked
+                </a>
+            </nav>
+            <div class="border-t border-vault-border pt-4 mt-4">
+                <p class="text-xs text-vault-muted mb-2">Account</p>
+                <div class="flex items-center gap-3">
+                    <img src="https://picsum.photos/seed/avatar42/80/80.jpg" class="w-9 h-9 rounded-full object-cover border-2 border-vault-border" alt="Avatar">
+                    <div>
+                        <p class="text-sm font-medium text-vault-light">Alex Chen</p>
+                        <p class="text-xs text-vault-muted">Premium</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
+    <!-- Sidebar overlay -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black/60 z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+    <!-- ============ HEADER / NAVBAR ============ -->
+    <header class="fixed top-0 left-0 right-0 z-30 glass transition-all duration-300" id="navbar">
+        <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 sm:h-18">
+                <!-- Left: Menu + Logo -->
+                <div class="flex items-center gap-3 sm:gap-5">
+                    <!-- Mobile menu toggle -->
+                    <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-xl hover:bg-white/5 transition-colors" aria-label="Toggle menu">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg>
+                    </button>
+                    <!-- Logo -->
+                    <a href="#" class="flex items-center gap-2.5 group">
+                        <svg width="34" height="34" viewBox="0 0 40 40" fill="none" class="transition-transform duration-300 group-hover:scale-110">
+                            <rect width="40" height="40" rx="10" fill="#e8443a"/>
+                            <path d="M16 12l12 8-12 8V12z" fill="white"/>
+                        </svg>
+                        <span class="text-lg sm:text-xl font-bold text-vault-light tracking-tight hidden sm:block">StreamVault</span>
+                    </a>
+                    <!-- Desktop nav links -->
+                    <nav class="hidden lg:flex items-center gap-1 ml-6">
+                        <a href="#" class="px-3 py-1.5 text-sm font-medium text-vault-light rounded-lg hover:bg-white/5 transition-colors">Home</a>
+                        <a href="#" class="px-3 py-1.5 text-sm font-medium text-vault-muted rounded-lg hover:bg-white/5 hover:text-vault-light transition-colors">Movies</a>
+                        <a href="#" class="px-3 py-1.5 text-sm font-medium text-vault-muted rounded-lg hover:bg-white/5 hover:text-vault-light transition-colors">Series</a>
+                        <a href="#" class="px-3 py-1.5 text-sm font-medium text-vault-muted rounded-lg hover:bg-white/5 hover:text-vault-light transition-colors">Live</a>
+                    </nav>
+                </div>
+
+                <!-- Center: Search -->
+                <div class="search-box hidden sm:flex items-center gap-2 bg-white/5 border border-vault-border rounded-2xl px-4 py-2 w-full max-w-md mx-4 transition-all duration-300">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b6b8a" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" placeholder="Search movies, series, creators..." class="bg-transparent text-sm text-vault-light placeholder-vault-muted outline-none w-full" id="searchInput">
+                </div>
+
+                <!-- Right: Actions -->
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <!-- Mobile search -->
+                    <button class="sm:hidden p-2 rounded-xl hover:bg-white/5 transition-colors" aria-label="Search" onclick="document.getElementById('searchInput').parentElement.classList.toggle('hidden'); document.getElementById('searchInput').parentElement.classList.toggle('sm:flex');">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    </button>
+                    <!-- Notifications -->
+                    <button class="relative p-2 rounded-xl hover:bg-white/5 transition-colors" aria-label="Notifications">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                        <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-vault-accent rounded-full"></span>
+                    </button>
+                    <!-- Profile avatar -->
+                    <button class="flex items-center gap-2 pl-2 pr-1 py-1 rounded-2xl hover:bg-white/5 transition-colors group" aria-label="Profile menu">
+                        <img src="https://picsum.photos/seed/avatar42/80/80.jpg" alt="Profile" class="w-8 h-8 rounded-full object-cover border-2 border-vault-border group-hover:border-vault-accent/50 transition-colors">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b6b8a" stroke-width="2" stroke-linecap="round" class="hidden sm:block"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="relative z-10">
+        <!-- ============ HERO BANNER ============ -->
+        <section class="relative w-full h-[85vh] sm:h-[80vh] lg:h-[85vh] overflow-hidden">
+            <!-- Background image -->
+            <img src="https://picsum.photos/seed/herobanner99/1920/1080.jpg" alt="Featured" class="absolute inset-0 w-full h-full object-cover" loading="eager">
+            <!-- Overlays -->
+            <div class="hero-overlay absolute inset-0"></div>
+            <div class="hero-bottom absolute bottom-0 left-0 right-0 h-40"></div>
+            <!-- Content -->
+            <div class="absolute inset-0 flex items-end pb-20 sm:pb-24 lg:pb-28">
+                <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 w-full">
+                    <div class="max-w-xl space-y-4 sm:space-y-5">
+                        <!-- Badge -->
+                        <div class="inline-flex items-center gap-2 bg-vault-accent/20 border border-vault-accent/30 rounded-full px-4 py-1.5">
+                            <span class="w-2 h-2 bg-vault-accent rounded-full animate-pulse"></span>
+                            <span class="text-xs font-semibold text-vault-accentHover uppercase tracking-wider">Featured Premiere</span>
+                        </div>
+                        <!-- Title -->
+                        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-900 text-white leading-[1.05] tracking-tight">
+                            The Last<br>Frontier
+                        </h1>
+                        <!-- Meta -->
+                        <div class="flex items-center gap-3 text-sm text-vault-text">
+                            <span class="flex items-center gap-1 text-vault-gold font-semibold">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                9.2
+                            </span>
+                            <span class="text-vault-border">|</span>
+                            <span>2024</span>
+                            <span class="text-vault-border">|</span>
+                            <span class="bg-white/10 px-2 py-0.5 rounded text-xs font-medium">4K</span>
+                            <span class="bg-white/10 px-2 py-0.5 rounded text-xs font-medium">HDR</span>
+                            <span class="text-vault-border">|</span>
+                            <span>2h 34min</span>
+                        </div>
+                        <!-- Description -->
+                        <p class="text-sm sm:text-base text-vault-text leading-relaxed line-clamp-3">
+                            A breathtaking journey across uncharted galaxies, where humanity's final expedition confronts the mysteries of a dying star system and the echoes of an ancient civilization.
+                        </p>
+                        <!-- Buttons -->
+                        <div class="flex items-center gap-3 pt-2">
+                            <button onclick="openPlayer('The Last Frontier','An epic sci-fi adventure','herobanner99')" class="play-pulse relative flex items-center gap-2.5 bg-vault-accent hover:bg-vault-accentHover text-white font-semibold px-7 py-3.5 rounded-2xl transition-all duration-300 hover:shadow-[0_8px_30px_-8px_rgba(232,68,58,0.6)] active:scale-95">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                                Play Now
+                            </button>
+                            <button class="flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white font-medium px-5 py-3.5 rounded-2xl transition-all duration-300 border border-white/10 hover:border-white/20 active:scale-95">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                Watchlist
+                            </button>
+                            <button class="p-3.5 bg-white/10 hover:bg-white/15 rounded-2xl transition-all duration-300 border border-white/10 hover:border-white/20 active:scale-95" aria-label="More info">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ CATEGORIES + TRENDING ============ -->
+        <section class="fade-section max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-10 mb-10">
+            <!-- Category pills -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-4 scroll-slider">
+                <button class="cat-pill active whitespace-nowrap px-5 py-2 rounded-2xl text-sm font-semibold transition-all duration-300 bg-white/5 text-vault-muted hover:text-vault-light" onclick="setCategory(this)">All</button>
+                <button class="cat-pill whitespace-nowrap px-5 py-2 rounded-2xl text-sm font-semibold transition-all duration-300 bg-white/5 text-vault-muted hover:text-vault-light" onclick="setCategory(this)">Trending</button>
+                <button class="cat-pill whitespace-nowrap px-5 py-2 rounded-2xl text-sm font-semibold transition-all duration-300 bg-white/5 text-vault-muted hover:text-vault-light" onclick="setCategory(this)">New Releases</button>
+                <button class="cat-pill whitespace-nowrap px-5 py-2 rounded-2xl text-sm font-semibold transition-all duration-300 bg-white/5 text-vault-muted hover:text-vault-light" onclick="setCategory(this)">Popular</button>
+                <button class="cat-pill whitespace-nowrap px-5 py-2 rounded-2xl text-sm font-semibold transition-all duration-300 bg-white/5 text-vault-muted hover:text-vault-light" onclick="setCategory(this)">Action</button>
+                <button class="cat-pill whitespace-nowrap px-5 py-2 rounded-2xl text-sm font-semibold transition-all duration-300 bg-white/5 text-vault-muted hover:text-vault-light" onclick="setCategory(this)">Sci-Fi</button>
+                <button class="cat-pill whitespace-nowrap px-5 py-2 rounded-2xl text-sm font-semibold transition-all duration-300 bg-white/5 text-vault-muted hover:text-vault-light" onclick="setCategory(this)">Drama</button>
+                <button class="cat-pill whitespace-nowrap px-5 py-2 rounded-2xl text-sm font-semibold transition-all duration-300 bg-white/5 text-vault-muted hover:text-vault-light" onclick="setCategory(this)">Documentary</button>
+            </div>
+
+            <!-- Trending Section -->
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl sm:text-2xl font-bold text-vault-light flex items-center gap-2">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e8443a" stroke-width="2" stroke-linecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                    Trending Now
+                </h2>
+                <button class="text-sm text-vault-muted hover:text-vault-accent transition-colors font-medium flex items-center gap-1">
+                    See all
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+            </div>
+            <!-- Slider -->
+            <div class="relative group/slider">
+                <div id="trendingSlider" class="scroll-slider flex gap-4 overflow-x-auto pb-2">
+                    <!-- Cards injected by JS -->
+                </div>
+                <!-- Scroll buttons -->
+                <button onclick="scrollSlider('trendingSlider',-1)" class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 w-10 h-10 bg-vault-surface/90 border border-vault-border rounded-full flex items-center justify-center opacity-0 group-hover/slider:opacity-100 transition-opacity duration-300 hover:bg-vault-card hover:border-vault-accent/30 z-10" aria-label="Scroll left">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <button onclick="scrollSlider('trendingSlider',1)" class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 w-10 h-10 bg-vault-surface/90 border border-vault-border rounded-full flex items-center justify-center opacity-0 group-hover/slider:opacity-100 transition-opacity duration-300 hover:bg-vault-card hover:border-vault-accent/30 z-10" aria-label="Scroll right">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+            </div>
+        </section>
+
+        <!-- ============ NEW RELEASES ============ -->
+        <section class="fade-section max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 mb-10">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl sm:text-2xl font-bold text-vault-light flex items-center gap-2">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f0a830" stroke-width="2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    New Releases
+                </h2>
+                <button class="text-sm text-vault-muted hover:text-vault-accent transition-colors font-medium flex items-center gap-1">
+                    See all
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+            </div>
+            <div class="relative group/slider">
+                <div id="newSlider" class="scroll-slider flex gap-4 overflow-x-auto pb-2"></div>
+                <button onclick="scrollSlider('newSlider',-1)" class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 w-10 h-10 bg-vault-surface/90 border border-vault-border rounded-full flex items-center justify-center opacity-0 group-hover/slider:opacity-100 transition-opacity duration-300 hover:bg-vault-card hover:border-vault-accent/30 z-10" aria-label="Scroll left">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <button onclick="scrollSlider('newSlider',1)" class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 w-10 h-10 bg-vault-surface/90 border border-vault-border rounded-full flex items-center justify-center opacity-0 group-hover/slider:opacity-100 transition-opacity duration-300 hover:bg-vault-card hover:border-vault-accent/30 z-10" aria-label="Scroll right">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+            </div>
+        </section>
+
+        <!-- ============ POPULAR ============ -->
+        <section class="fade-section max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 mb-10">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl sm:text-2xl font-bold text-vault-light flex items-center gap-2">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e8443a" stroke-width="2" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                    Popular This Week
+                </h2>
+                <button class="text-sm text-vault-muted hover:text-vault-accent transition-colors font-medium flex items-center gap-1">
+                    See all
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+            </div>
+            <div class="relative group/slider">
+                <div id="popularSlider" class="scroll-slider flex gap-4 overflow-x-auto pb-2"></div>
+                <button onclick="scrollSlider('popularSlider',-1)" class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 w-10 h-10 bg-vault-surface/90 border border-vault-border rounded-full flex items-center justify-center opacity-0 group-hover/slider:opacity-100 transition-opacity duration-300 hover:bg-vault-card hover:border-vault-accent/30 z-10" aria-label="Scroll left">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <button onclick="scrollSlider('popularSlider',1)" class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 w-10 h-10 bg-vault-surface/90 border border-vault-border rounded-full flex items-center justify-center opacity-0 group-hover/slider:opacity-100 transition-opacity duration-300 hover:bg-vault-card hover:border-vault-accent/30 z-10" aria-label="Scroll right">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+            </div>
+        </section>
+
+        <!-- ============ TOP 10 RANKING ============ -->
+        <section class="fade-section max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 mb-16">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl sm:text-2xl font-bold text-vault-light flex items-center gap-2">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f0a830" stroke-width="2" stroke-linecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    Top 10 Today
+                </h2>
+            </div>
+            <div id="top10Grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"></div>
+        </section>
+    </main>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="relative z-10 border-t border-vault-border bg-vault-surface/50">
+        <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-10">
+                <!-- Brand -->
+                <div class="col-span-2 sm:col-span-1">
+                    <div class="flex items-center gap-2.5 mb-4">
+                        <svg width="30" height="30" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#e8443a"/><path d="M16 12l12 8-12 8V12z" fill="white"/></svg>
+                        <span class="text-lg font-bold text-vault-light">StreamVault</span>
+                    </div>
+                    <p class="text-sm text-vault-muted leading-relaxed">Premium streaming for the modern viewer. Unlimited entertainment, zero compromises.</p>
+                </div>
+                <!-- Links -->
+                <div>
+                    <h4 class="text-sm font-semibold text-vault-light mb-3">Browse</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-vault-muted hover:text-vault-accent transition-colors">Movies</a></li>
+                        <li><a href="#" class="text-sm text-vault-muted hover:text-vault-accent transition-colors">Series</a></li>
+                        <li><a href="#" class="text-sm text-vault-muted hover:text-vault-accent transition-colors">Documentaries</a></li>
+                        <li><a href="#" class="text-sm text-vault-muted hover:text-vault-accent transition-colors">Live TV</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold text-vault-light mb-3">Company</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-vault-muted hover:text-vault-accent transition-colors">About</a></li>
+                        <li><a href="#" class="text-sm text-vault-muted hover:text-vault-accent transition-colors">Careers</a></li>
+                        <li><a href="#" class="text-sm text-vault-muted hover:text-vault-accent transition-colors">Press</a></li>
+                        <li><a href="#" class="text-sm text-vault-muted hover:text-vault-accent transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold text-vault-light mb-3">Legal</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-vault-muted hover:text-vault-accent transition-colors">Privacy</a></li>
+                        <li><a href="#" class="text-sm text-vault-muted hover:text-vault-accent transition-colors">Terms</a></li>
+                        <li><a href="#" class="text-sm text-vault-muted hover:text-vault-accent transition-colors">Cookies</a></li>
+                        <li><a href="#" class="text-sm text-vault-muted hover:text-vault-accent transition-colors">Licenses</a></li>
+                    </ul>
+                </div>
+            </div>
+            <!-- Bottom bar -->
+            <div class="border-t border-vault-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="text-xs text-vault-muted">&copy; 2024 StreamVault. All rights reserved.</p>
+                <div class="flex items-center gap-4">
+                    <!-- Twitter/X -->
+                    <a href="#" class="text-vault-muted hover:text-vault-light transition-colors" aria-label="Twitter">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    </a>
+                    <!-- Instagram -->
+                    <a href="#" class="text-vault-muted hover:text-vault-light transition-colors" aria-label="Instagram">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>
+                    </a>
+                    <!-- YouTube -->
+                    <a href="#" class="text-vault-muted hover:text-vault-light transition-colors" aria-label="YouTube">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                    </a>
+                    <!-- Discord -->
+                    <a href="#" class="text-vault-muted hover:text-vault-light transition-colors" aria-label="Discord">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ============ VIDEO PLAYER MODAL ============ -->
+    <div id="playerModal" class="modal-backdrop hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80" onclick="closePlayer(event)">
+        <div class="modal-content w-full max-w-4xl" onclick="event.stopPropagation()">
+            <!-- Player container -->
+            <div class="relative bg-black rounded-2xl overflow-hidden shadow-2xl shadow-black/50">
+                <!-- Video -->
+                <div class="relative aspect-video bg-vault-bg">
+                    <video id="videoPlayer" class="w-full h-full object-cover" preload="metadata">
+                        <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                    <!-- Play overlay -->
+                    <div id="playOverlay" class="absolute inset-0 flex items-center justify-center cursor-pointer bg-black/30 transition-opacity duration-300" onclick="togglePlay()">
+                        <div class="w-16 h-16 sm:w-20 sm:h-20 bg-vault-accent/90 rounded-full flex items-center justify-center hover:bg-vault-accent transition-colors play-pulse">
+                            <svg id="overlayPlayIcon" width="32" height="32" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+                        </div>
+                    </div>
+                </div>
+                <!-- Custom controls -->
+                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-16 pb-3 px-4">
+                    <!-- Progress bar -->
+                    <div class="progress-track relative h-1.5 bg-white/20 rounded-full mb-3 group/prog cursor-pointer" onclick="seekVideo(event)">
+                        <div id="progressBar" class="h-full bg-vault-accent rounded-full relative transition-none" style="width:0%">
+                            <div class="progress-thumb absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg -translate-x-1/2"></div>
+                        </div>
+                        <div id="bufferBar" class="absolute top-0 left-0 h-full bg-white/10 rounded-full" style="width:0%"></div>
+                    </div>
+                    <!-- Controls row -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <!-- Play/Pause -->
+                            <button onclick="togglePlay()" class="text-white hover:text-vault-accent transition-colors" aria-label="Play/Pause">
+                                <svg id="ctrlPlayIcon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                            </button>
+                            <!-- Skip forward -->
+                            <button onclick="skipVideo(10)" class="text-white/70 hover:text-white transition-colors" aria-label="Skip forward">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="5 4 15 12 5 20 5 4" fill="currentColor" stroke="none"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+                            </button>
+                            <!-- Volume -->
+                            <div class="flex items-center gap-1.5 group/vol">
+                                <button onclick="toggleMute()" class="text-white/70 hover:text-white transition-colors" aria-label="Volume">
+                                    <svg id="volIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg>
+                                </button>
+                                <input type="range" id="volumeSlider" min="0" max="100" value="80" class="w-0 group-hover/vol:w-16 transition-all duration-300 overflow-hidden accent-vault-accent h-1 cursor-pointer" oninput="setVolume(this.value)">
+                            </div>
+                            <!-- Time -->
+                            <span id="timeDisplay" class="text-xs text-white/60 font-mono">0:00 / 0:00</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <!-- Subtitles -->
+                            <button class="text-white/70 hover:text-white transition-colors p-1" aria-label="Subtitles">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="14" y1="12" x2="18" y2="12"/></svg>
+                            </button>
+                            <!-- Fullscreen -->
+                            <button onclick="toggleFullscreen()" class="text-white/70 hover:text-white transition-colors p-1" aria-label="Fullscreen">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                            </button>
+                            <!-- Close -->
+                            <button onclick="closePlayer()" class="text-white/70 hover:text-vault-accent transition-colors p-1 ml-1" aria-label="Close">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Video info below player -->
+            <div class="mt-4 glass rounded-2xl p-5">
+                <h3 id="modalTitle" class="text-lg font-bold text-vault-light mb-1"></h3>
+                <p id="modalDesc" class="text-sm text-vault-muted"></p>
+                <div class="flex items-center gap-4 mt-3">
+                    <button class="flex items-center gap-1.5 text-sm text-vault-muted hover:text-vault-accent transition-colors">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>
+                        Like
+                    </button>
+                    <button class="flex items-center gap-1.5 text-sm text-vault-muted hover:text-vault-accent transition-colors">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                        Share
+                    </button>
+                    <button class="flex items-center gap-1.5 text-sm text-vault-muted hover:text-vault-accent transition-colors">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ SKELETON OVERLAY (shown on initial load) ============ -->
+    <div id="skeletonOverlay" class="fixed inset-0 z-[200] bg-vault-bg transition-opacity duration-500">
+        <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-20">
+            <!-- Hero skeleton -->
+            <div class="skeleton w-full h-[60vh] mb-8"></div>
+            <!-- Category pills skeleton -->
+            <div class="flex gap-3 mb-6 overflow-hidden">
+                <div class="skeleton w-20 h-10 shrink-0"></div>
+                <div class="skeleton w-24 h-10 shrink-0"></div>
+                <div class="skeleton w-28 h-10 shrink-0"></div>
+                <div class="skeleton w-20 h-10 shrink-0"></div>
+                <div class="skeleton w-24 h-10 shrink-0"></div>
+            </div>
+            <!-- Cards skeleton -->
+            <div class="skeleton w-48 h-6 mb-4"></div>
+            <div class="flex gap-4 overflow-hidden">
+                <div class="skeleton w-72 h-44 shrink-0"></div>
+                <div class="skeleton w-72 h-44 shrink-0"></div>
+                <div class="skeleton w-72 h-44 shrink-0"></div>
+                <div class="skeleton w-72 h-44 shrink-0"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ====== DATA ======
+        const videoData = {
+            trending: [
+                { title: "Crimson Horizon", creator: "Nova Studios", duration: "2:14:30", seed: "crimson11", views: "4.2M" },
+                { title: "Neon Underworld", creator: "Pixel Dreams", duration: "1:48:05", seed: "neon22", views: "3.8M" },
+                { title: "Echoes of Mars", creator: "Red Planet Films", duration: "2:01:22", seed: "mars33", views: "5.1M" },
+                { title: "The Silent Wave", creator: "Ocean Pictures", duration: "1:32:18", seed: "wave44", views: "2.9M" },
+                { title: "Iron Protocol", creator: "Steel Frame Media", duration: "2:22:10", seed: "iron55", views: "6.3M" },
+                { title: "Phantom Circuit", creator: "Ghost Digital", duration: "1:55:44", seed: "phantom66", views: "3.4M" },
+                { title: "Arctic Drift", creator: "Frost Cinema", duration: "2:08:33", seed: "arctic77", views: "4.7M" },
+                { title: "Solar Winds", creator: "Helios Productions", duration: "1:41:09", seed: "solar88", views: "2.1M" },
+            ],
+            newReleases: [
+                { title: "Void Walker", creator: "Dark Matter Inc", duration: "2:16:50", seed: "void101", views: "890K" },
+                { title: "Glass Empire", creator: "Crystal Films", duration: "1:49:22", seed: "glass202", views: "1.2M" },
+                { title: "Midnight Run", creator: "Noir Studios", duration: "1:38:15", seed: "midnight303", views: "2.4M" },
+                { title: "Coral Depths", creator: "Deep Blue Media", duration: "1:25:40", seed: "coral404", views: "670K" },
+                { title: "Steel Bloom", creator: "Forge Pictures", duration: "2:05:18", seed: "steel505", views: "1.8M" },
+                { title: "Ember Trail", creator: "Fire Path Films", duration: "1:52:30", seed: "ember606", views: "1.1M" },
+                { title: "Zero Gravity", creator: "Space Lab Cinema", duration: "2:10:05", seed: "zero707", views: "950K" },
+                { title: "Silk Road", creator: "Eastern Winds", duration: "1:44:55", seed: "silk808", views: "780K" },
+            ],
+            popular: [
+                { title: "Broken Compass", creator: "Lost Directions", duration: "2:20:11", seed: "compass901", views: "12M" },
+                { title: "Thunder Peak", creator: "Mountain High Prod", duration: "1:56:28", seed: "thunder002", views: "9.8M" },
+                { title: "Binary Stars", creator: "Dual Systems", duration: "2:03:45", seed: "binary003", views: "8.2M" },
+                { title: "Last Light", creator: "Dusk Studios", duration: "1:47:30", seed: "lastlight04", views: "7.5M" },
+                { title: "Wild Circuit", creator: "Racing Dreams", duration: "1:33:12", seed: "wildcircuit5", views: "11M" },
+                { title: "Deep State", creator: "Shadow Games", duration: "2:15:08", seed: "deepstate06", views: "10.3M" },
+                { title: "Crystal Veins", creator: "Gem Cinema", duration: "1:59:44", seed: "crystal07", views: "6.9M" },
+                { title: "Rust & Bone", creator: "Iron Garden Films", duration: "2:08:20", seed: "rustbone08", views: "8.7M" },
+            ]
+        };
+
+        const top10Data = [
+            { title: "Iron Protocol", creator: "Steel Frame Media", duration: "2:22:10", seed: "iron55", views: "6.3M" },
+            { title: "Wild Circuit", creator: "Racing Dreams", duration: "1:33:12", seed: "wildcircuit5", views: "11M" },
+            { title: "Broken Compass", creator: "Lost Directions", duration: "2:20:11", seed: "compass901", views: "12M" },
+            { title: "Echoes of Mars", creator: "Red Planet Films", duration: "2:01:22", seed: "mars33", views: "5.1M" },
+            { title: "Deep State", creator: "Shadow Games", duration: "2:15:08", seed: "deepstate06", views: "10.3M" },
+        ];
+
+        // ====== RENDER FUNCTIONS ======
+
+        // Create a single video card
+        function createCard(video, index) {
+            const card = document.createElement('div');
+            card.className = 'card-glow flex-shrink-0 w-[280px] sm:w-[300px] cursor-pointer group/card';
+            card.setAttribute('role', 'button');
+            card.setAttribute('tabindex', '0');
+            card.setAttribute('aria-label', `Play ${video.title}`);
+            card.onclick = () => openPlayer(video.title, `By ${video.creator}`, video.seed);
+            card.onkeydown = (e) => { if (e.key === 'Enter') openPlayer(video.title, `By ${video.creator}`, video.seed); };
+
+            card.innerHTML = `
+                <!-- Thumbnail -->
+                <div class="thumb-ratio rounded-2xl overflow-hidden relative bg-vault-card">
+                    <img src="https://picsum.photos/seed/${video.seed}/600/340.jpg" 
+                         alt="${video.title}" 
+                         class="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110" 
+                         loading="lazy">
+                    <!-- Hover overlay with play icon -->
+                    <div class="absolute inset-0 bg-black/0 group-hover/card:bg-black/40 transition-all duration-300 flex items-center justify-center">
+                        <div class="w-12 h-12 bg-vault-accent/90 rounded-full flex items-center justify-center opacity-0 scale-75 group-hover/card:opacity-100 group-hover/card:scale-100 transition-all duration-300 shadow-lg shadow-vault-accent/30">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+                        </div>
+                    </div>
+                    <!-- Duration badge -->
+                    <div class="absolute bottom-2 right-2 bg-black/80 backdrop-blur-sm text-white text-xs font-medium px-2 py-0.5 rounded-lg">
+                        ${video.duration}
+                    </div>
+                    <!-- Progress indicator (random for visual) -->
+                    <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-white/10">
+                        <div class="h-full bg-vault-accent rounded-r-full" style="width:${Math.floor(Math.random() * 80 + 10)}%"></div>
+                    </div>
+                </div>
+                <!-- Info -->
+                <div class="mt-3 flex gap-3">
+                    <img src="https://picsum.photos/seed/${video.seed}av/80/80.jpg" 
+                         alt="${video.creator}" 
+                         class="w-9 h-9 rounded-full object-cover flex-shrink-0 border border-vault-border" 
+                         loading="lazy">
+                    <div class="min-w-0">
+                        <h3 class="text-sm font-semibold text-vault-light truncate group-hover/card:text-vault-accentHover transition-colors">${video.title}</h3>
+                        <p class="text-xs text-vault-muted truncate mt-0.5">${video.creator}</p>
+                        <p class="text-xs text-vault-muted mt-0.5">${video.views} views</p>
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
+        // Populate a slider
+        function populateSlider(containerId, data) {
+            const container = document.getElementById(containerId);
+            data.forEach((video, i) => container.appendChild(createCard(video, i)));
+        }
+
+        // Create Top 10 card with rank number
+        function createTop10Card(video, rank) {
+            const card = document.createElement('div');
+            card.className = 'card-glow cursor-pointer group/card';
+            card.onclick = () => openPlayer(video.title, `By ${video.creator}`, video.seed);
+
+            card.innerHTML = `
+                <div class="thumb-ratio rounded-2xl overflow-hidden relative bg-vault-card">
+                    <img src="https://picsum.photos/seed/${video.seed}/600/340.jpg" 
+                         alt="${video.title}" 
+                         class="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110" 
+                         loading="lazy">
+                    <div class="absolute inset-0 bg-black/0 group-hover/card:bg-black/40 transition-all duration-300 flex items-center justify-center">
+                        <div class="w-12 h-12 bg-vault-accent/90 rounded-full flex items-center justify-center opacity-0 scale-75 group-hover/card:opacity-100 group-hover/card:scale-100 transition-all duration-300">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+                        </div>
+                    </div>
+                    <div class="absolute bottom-2 right-2 bg-black/80 backdrop-blur-sm text-white text-xs font-medium px-2 py-0.5 rounded-lg">
+                        ${video.duration}
+                    </div>
+                    <!-- Rank number -->
+                    <div class="absolute -left-1 -bottom-1 text-7xl sm:text-8xl font-900 text-white/10 leading-none select-none pointer-events-none" style="text-shadow: 0 0 40px rgba(232,68,58,0.2);">
+                        ${rank}
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <h3 class="text-sm font-semibold text-vault-light truncate group-hover/card:text-vault-accentHover transition-colors">${video.title}</h3>
+                    <p class="text-xs text-vault-muted mt-0.5">${video.creator} &middot; ${video.views} views</p>
+                </div>
+            `;
+            return card;
+        }
+
+        // ====== INITIALIZATION ======
+        function init() {
+            // Populate all sliders
+            populateSlider('trendingSlider', videoData.trending);
+            populateSlider('newSlider', videoData.newReleases);
+            populateSlider('popularSlider', videoData.popular);
+
+            // Populate Top 10 grid
+            const top10Grid = document.getElementById('top10Grid');
+            top10Data.forEach((video, i) => top10Grid.appendChild(createTop10Card(video, i + 1)));
+
+            // Fade in sections on scroll
+            initScrollObserver();
+
+            // Hide skeleton after content loads
+            setTimeout(() => {
+                const skel = document.getElementById('skeletonOverlay');
+                skel.style.opacity = '0';
+                setTimeout(() => skel.style.display = 'none', 500);
+            }, 800);
+        }
+
+        // ====== SIDEBAR ======
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const isOpen = !sidebar.classList.contains('-translate-x-full');
+            if (isOpen) {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            } else {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            }
+        }
+
+        // ====== CATEGORY PILLS ======
+        function setCategory(btn) {
+            document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        // ====== SLIDER SCROLL ======
+        function scrollSlider(id, direction) {
+            const slider = document.getElementById(id);
+            const scrollAmount = 320;
+            slider.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+        }
+
+        // ====== SCROLL OBSERVER (Fade-in) ======
+        function initScrollObserver() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+            document.querySelectorAll('.fade-section').forEach(el => observer.observe(el));
+        }
+
+        // ====== VIDEO PLAYER MODAL ======
+        const videoPlayer = document.getElementById('videoPlayer');
+        const playerModal = document.getElementById('playerModal');
+        const playOverlay = document.getElementById('playOverlay');
+        const progressBar = document.getElementById('progressBar');
+        const bufferBar = document.getElementById('bufferBar');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const ctrlPlayIcon = document.getElementById('ctrlPlayIcon');
+        const overlayPlayIcon = document.getElementById('overlayPlayIcon');
+        let isPlaying = false;
+
+        function openPlayer(title, desc, seed) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalDesc').textContent = desc;
+            playerModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            // Reset player state
+            videoPlayer.currentTime = 0;
+            progressBar.style.width = '0%';
+            isPlaying = false;
+            updatePlayIcons();
+            playOverlay.style.opacity = '1';
+        }
+
+        function closePlayer(e) {
+            if (e && e.target !== playerModal) return;
+            videoPlayer.pause();
+            isPlaying = false;
+            playerModal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        function togglePlay() {
+            if (videoPlayer.paused) {
+                videoPlayer.play().catch(() => {});
+                isPlaying = true;
+                playOverlay.style.opacity = '0';
+            } else {
+                videoPlayer.pause();
+                isPlaying = false;
+                playOverlay.style.opacity = '1';
+            }
+            updatePlayIcons();
+        }
+
+        function updatePlayIcons() {
+            const playPath = '<path d="M8 5v14l11-7z"/>';
+            const pausePath = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+            const svg = isPlaying ? pausePath : playPath;
+            ctrlPlayIcon.innerHTML = svg;
+            overlayPlayIcon.innerHTML = svg;
+        }
+
+        function skipVideo(seconds) {
+            videoPlayer.currentTime = Math.min(videoPlayer.duration || 0, videoPlayer.currentTime + seconds);
+        }
+
+        function seekVideo(e) {
+            const track = e.currentTarget;
+            const rect = track.getBoundingClientRect();
+            const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            if (videoPlayer.duration) {
+                videoPlayer.currentTime = percent * videoPlayer.duration;
+            }
+        }
+
+        function setVolume(val) {
+            videoPlayer.volume = val / 100;
+            videoPlayer.muted = (val === 0);
+            updateVolumeIcon();
+        }
+
+        function toggleMute() {
+            videoPlayer.muted = !videoPlayer.muted;
+            document.getElementById('volumeSlider').value = videoPlayer.muted ? 0 : videoPlayer.volume * 100;
+            updateVolumeIcon();
+        }
+
+        function updateVolumeIcon() {
+            const volIcon = document.getElementById('volIcon');
+            if (videoPlayer.muted || videoPlayer.volume === 0) {
+                volIcon.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>';
+            } else if (videoPlayer.volume < 0.5) {
+                volIcon.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"/><path d="M15.54 8.46a5 5 0 010 7.07"/>';
+            } else {
+                volIcon.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/>';
+            }
+        }
+
+        function toggleFullscreen() {
+            const container = videoPlayer.closest('.relative');
+            if (!document.fullscreenElement) {
+                container.requestFullscreen?.() || container.webkitRequestFullscreen?.();
+            } else {
+                document.exitFullscreen?.() || document.webkitExitFullscreen?.();
+            }
+        }
+
+        // Format time as M:SS
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '0:00';
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+
+        // Video time update
+        videoPlayer.addEventListener('timeupdate', () => {
+            if (videoPlayer.duration) {
+                const percent = (videoPlayer.currentTime / videoPlayer.duration) * 100;
+                progressBar.style.width = percent + '%';
+                timeDisplay.textContent = `${formatTime(videoPlayer.currentTime)} / ${formatTime(videoPlayer.duration)}`;
+            }
+        });
+
+        // Buffer progress
+        videoPlayer.addEventListener('progress', () => {
+            if (videoPlayer.buffered.length > 0 && videoPlayer.duration) {
+                const buffered = (videoPlayer.buffered.end(videoPlayer.buffered.length - 1) / videoPlayer.duration) * 100;
+                bufferBar.style.width = buffered + '%';
+            }
+        });
+
+        // Video ended
+        videoPlayer.addEventListener('ended', () => {
+            isPlaying = false;
+            updatePlayIcons();
+            playOverlay.style.opacity = '1';
+        });
+
+        // Keyboard controls for player
+        document.addEventListener('keydown', (e) => {
+            if (playerModal.classList.contains('hidden')) return;
+            if (e.key === ' ' || e.key === 'k') { e.preventDefault(); togglePlay(); }
+            if (e.key === 'ArrowRight') skipVideo(10);
+            if (e.key === 'ArrowLeft') skipVideo(-10);
+            if (e.key === 'm') toggleMute();
+            if (e.key === 'f') toggleFullscreen();
+            if (e.key === 'Escape') closePlayer();
+        });
+
+        // ====== NAVBAR SCROLL EFFECT ======
+        let lastScroll = 0;
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            const scrollY = window.scrollY;
+            if (scrollY > 100) {
+                navbar.style.background = 'rgba(6, 6, 12, 0.85)';
+            } else {
+                navbar.style.background = 'rgba(14, 14, 24, 0.6)';
+            }
+            lastScroll = scrollY;
+        }, { passive: true });
+
+        // ====== SEARCH FUNCTIONALITY ======
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            const allCards = document.querySelectorAll('.card-glow');
+            allCards.forEach(card => {
+                const title = card.querySelector('h3')?.textContent.toLowerCase() || '';
+                const creator = card.querySelector('.text-vault-muted')?.textContent.toLowerCase() || '';
+                if (!query || title.includes(query) || creator.includes(query)) {
+                    card.style.display = '';
+                    card.style.opacity = '1';
+                } else {
+                    card.style.opacity = '0.2';
+                }
+            });
+        });
+
+        // ====== START ======
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
