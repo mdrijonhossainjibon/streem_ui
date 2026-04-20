@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamVault Live</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        body: ['"Sora"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --bg: #0a0a12;
+            --bg-up: #10101c;
+            --card: rgba(255,255,255,0.03);
+            --card-border: rgba(255,255,255,0.055);
+            --accent: #e50914;
+            --accent-glow: rgba(229,9,20,0.35);
+            --red-bright: #ff1a1a;
+            --muted: rgba(255,255,255,0.4);
+            --dim: rgba(255,255,255,0.18);
+            --chat-bg: rgba(10,10,18,0.85);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Sora', sans-serif; background: var(--bg); color: #fff; overflow-x: hidden; }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+        .glass { background: var(--card); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--card-border); }
+        .glass-solid { background: rgba(16,16,28,0.92); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border: 1px solid var(--card-border); }
+
+        /* Blinking LIVE dot */
+        .live-dot { animation: liveBlink 1.2s ease-in-out infinite; }
+        @keyframes liveBlink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        /* Live badge pulse */
+        .live-badge { animation: badgePulse 2s ease-in-out infinite; }
+        @keyframes badgePulse {
+            0%,100% { box-shadow: 0 0 8px var(--accent-glow); }
+            50% { box-shadow: 0 0 20px var(--accent-glow), 0 0 40px rgba(229,9,20,0.12); }
+        }
+
+        /* Chat message entrance */
+        .chat-msg { animation: chatIn 0.35s ease-out both; }
+        @keyframes chatIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Viewer count pulse */
+        .viewer-pulse { animation: vPulse 3s ease-in-out infinite; }
+        @keyframes vPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+        /* Rec card hover */
+        .rec-card { transition: transform 0.35s ease, box-shadow 0.35s ease; }
+        .rec-card:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 8px 30px rgba(0,0,0,0.5), 0 0 20px var(--accent-glow); }
+        .rec-card .rec-thumb { transition: transform 0.5s ease; }
+        .rec-card:hover .rec-thumb { transform: scale(1.08); }
+
+        /* Follow button */
+        .follow-btn { background: var(--accent); transition: transform 0.25s ease, box-shadow 0.25s ease; }
+        .follow-btn:hover { transform: scale(1.04); box-shadow: 0 0 20px var(--accent-glow); }
+        .follow-btn:active { transform: scale(0.97); }
+        .follow-btn.following { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); }
+
+        /* Quality dropdown */
+        .qual-btn { transition: background 0.2s ease; }
+        .qual-btn:hover { background: rgba(255,255,255,0.12); }
+        .qual-btn.active { background: rgba(229,9,20,0.2); color: var(--accent); }
+
+        /* Emoji panel */
+        .emoji-panel { transition: opacity 0.25s ease, transform 0.25s ease; }
+        .emoji-panel.hidden { opacity: 0; transform: translateY(8px) scale(0.95); pointer-events: none; }
+
+        /* Send button */
+        .send-btn { background: var(--accent); transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease; }
+        .send-btn:hover { transform: scale(1.08); box-shadow: 0 0 16px var(--accent-glow); }
+        .send-btn:active { transform: scale(0.95); }
+
+        /* Gradient accent line */
+        .accent-line { background: linear-gradient(90deg, var(--accent), transparent); }
+
+        /* Focus visible */
+        *:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+        }
+
+        /* Chat input glow */
+        .chat-input:focus { border-color: rgba(229,9,20,0.4); box-shadow: 0 0 0 2px rgba(229,9,20,0.12); }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- ========== TOP LIVE BAR ========== -->
+    <header class="fixed top-0 left-0 right-0 z-50 glass-solid">
+        <div class="h-14 px-4 sm:px-6 flex items-center gap-3 sm:gap-5">
+            <!-- Logo -->
+            <a href="#" class="flex items-center gap-2 shrink-0">
+                <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, var(--accent), #b91c1c);">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M8 5.14v13.72a.5.5 0 0 0 .75.43l11.5-6.86a.5.5 0 0 0 0-.86L8.75 4.71a.5.5 0 0 0-.75.43Z" fill="#fff"/></svg>
+                </div>
+                <span class="font-bold text-xs tracking-wide hidden sm:inline">STREAMVAULT</span>
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded" style="background: rgba(229,9,20,0.15); color: var(--accent);">LIVE</span>
+            </a>
+
+            <!-- Nav links -->
+            <nav class="hidden md:flex items-center gap-1 ml-2" aria-label="Main navigation">
+                <a href="#" class="px-3 py-1.5 rounded-lg text-[11px] font-medium text-white/35 hover:text-white hover:bg-white/[0.05] transition-colors">Browse</a>
+                <a href="#" class="px-3 py-1.5 rounded-lg text-[11px] font-medium text-white/35 hover:text-white hover:bg-white/[0.05] transition-colors">Categories</a>
+                <a href="#" class="px-3 py-1.5 rounded-lg text-[11px] font-medium text-white bg-white/[0.06]">Following</a>
+            </nav>
+
+            <div class="flex-1"></div>
+
+            <!-- Search -->
+            <div class="relative max-w-xs hidden sm:block">
+                <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/20" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <input type="text" placeholder="Search live streams..." class="w-full pl-9 pr-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.05] text-xs text-white placeholder-white/20 focus:outline-none focus:border-white/12 transition-all" aria-label="Search live streams">
+            </div>
+
+            <!-- Right -->
+            <div class="flex items-center gap-2 shrink-0">
+                <button class="p-2 rounded-lg hover:bg-white/[0.06] transition-colors relative" aria-label="Notifications">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                </button>
+                <button class="w-7 h-7 rounded-lg overflow-hidden" aria-label="Profile">
+                    <img src="https://picsum.photos/seed/myavatar/56/56" alt="You" class="w-full h-full object-cover">
+                </button>
+            </div>
+        </div>
+        <!-- Accent line -->
+        <div class="accent-line h-[2px]"></div>
+    </header>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <main class="pt-[58px]">
+
+        <!-- LIVE BAR (below header) -->
+        <div class="glass-solid px-4 sm:px-6 py-2.5 flex items-center gap-3 border-b border-white/[0.03]">
+            <!-- LIVE badge -->
+            <div class="live-badge flex items-center gap-2 px-3 py-1 rounded-lg" style="background: rgba(229,9,20,0.15); border: 1px solid rgba(229,9,20,0.2);">
+                <span class="live-dot w-2 h-2 rounded-full" style="background: var(--red-bright);"></span>
+                <span class="text-[11px] font-bold tracking-wider" style="color: var(--red-bright);">LIVE</span>
+            </div>
+
+            <!-- Stream title -->
+            <h1 class="text-sm font-semibold truncate flex-1 min-w-0">Championship Finals — Night 3 | Elite Tournament Series</h1>
+
+            <!-- Viewer count -->
+            <div class="flex items-center gap-1.5 shrink-0">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="text-white/30 viewer-pulse"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <span class="text-xs font-semibold tabular-nums text-white/50" id="viewerCount">24,831</span>
+            </div>
+
+            <!-- Share button -->
+            <button onclick="showToast('Stream link copied to clipboard')" class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-white/40 hover:text-white hover:bg-white/[0.06] transition-colors" aria-label="Share stream">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                <span class="hidden sm:inline">Share</span>
+            </button>
+        </div>
+
+        <!-- VIDEO + CHAT LAYOUT -->
+        <div class="flex flex-col lg:flex-row">
+
+            <!-- LEFT: Video + Info -->
+            <div class="flex-1 min-w-0">
+
+                <!-- VIDEO PLAYER -->
+                <section class="relative bg-black aspect-video w-full" aria-label="Live video player">
+                    <img src="https://picsum.photos/seed/liveesport/1920/1080" alt="Live stream" class="w-full h-full object-cover">
+
+                    <!-- LIVE overlay top-left -->
+                    <div class="absolute top-4 left-4 flex items-center gap-2">
+                        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg" style="background: rgba(229,9,20,0.85);">
+                            <span class="live-dot w-1.5 h-1.5 rounded-full bg-white"></span>
+                            <span class="text-[10px] font-bold tracking-wider">LIVE</span>
+                        </div>
+                        <span class="px-2 py-1 rounded-lg text-[10px] font-medium bg-black/60 text-white/70">1080p60</span>
+                    </div>
+
+                    <!-- Viewer overlay top-right -->
+                    <div class="absolute top-4 right-4 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/60">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="text-white/40"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <span class="text-[10px] font-semibold tabular-nums text-white/60" id="viewerOverlay">24,831</span>
+                    </div>
+
+                    <!-- Bottom controls -->
+                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-16 pb-3 px-4">
+                        <div class="flex items-center justify-between">
+                            <!-- Left controls -->
+                            <div class="flex items-center gap-2">
+                                <!-- Play/Pause (mock — always live) -->
+                                <button class="w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors" aria-label="Live indicator">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="12" r="5"/></svg>
+                                </button>
+                                <!-- Volume -->
+                                <button onclick="toggleMute()" class="w-9 h-9 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors" aria-label="Toggle mute" id="volBtn">
+                                    <svg id="volIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                                </button>
+                            </div>
+                            <!-- Right controls -->
+                            <div class="flex items-center gap-2">
+                                <!-- Quality selector -->
+                                <div class="relative">
+                                    <button onclick="toggleQuality()" class="qual-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-white/70" aria-label="Change quality">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                                        <span id="qualLabel">1080p</span>
+                                    </button>
+                                    <!-- Quality dropdown -->
+                                    <div id="qualDrop" class="emoji-panel hidden absolute bottom-full right-0 mb-2 w-36 rounded-xl glass-solid overflow-hidden shadow-2xl shadow-black/60">
+                                        <button onclick="setQuality('4K')" class="qual-btn w-full text-left px-4 py-2.5 text-[11px] font-medium text-white/60">4K Ultra HD</button>
+                                        <button onclick="setQuality('1080p')" class="qual-btn active w-full text-left px-4 py-2.5 text-[11px] font-medium text-white/60">1080p60</button>
+                                        <button onclick="setQuality('720p')" class="qual-btn w-full text-left px-4 py-2.5 text-[11px] font-medium text-white/60">720p60</button>
+                                        <button onclick="setQuality('480p')" class="qual-btn w-full text-left px-4 py-2.5 text-[11px] font-medium text-white/60">480p</button>
+                                        <button onclick="setQuality('Auto')" class="qual-btn w-full text-left px-4 py-2.5 text-[11px] font-medium text-white/60">Auto</button>
+                                    </div>
+                                </div>
+                                <!-- Fullscreen -->
+                                <button onclick="toggleFullscreen()" class="w-9 h-9 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors" aria-label="Toggle fullscreen">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- STREAM INFO -->
+                <section class="px-4 sm:px-6 py-5">
+                    <div class="flex flex-col sm:flex-row sm:items-start gap-4">
+                        <!-- Avatar -->
+                        <div class="shrink-0">
+                            <img src="https://picsum.photos/seed/streamer88/96/96" alt="Streamer avatar" class="w-14 h-14 rounded-2xl object-cover ring-2 ring-[var(--accent)]/30">
+                        </div>
+                        <!-- Info -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                <h2 class="text-base font-bold">NovaCraft_Esports</h2>
+                                <span class="px-2 py-0.5 text-[9px] font-bold rounded-md" style="background: rgba(139,92,246,0.15); color: #a78bfa;">PARTNER</span>
+                                <div class="flex items-center gap-1 text-[10px]" style="color: var(--dim);">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                    1.2M followers
+                                </div>
+                            </div>
+                            <p class="text-xs leading-relaxed mb-3" style="color: var(--muted);">
+                                Championship Finals — Night 3 of the Elite Tournament Series. Top 4 teams battle for the $500K grand prize. Live commentary and analysis.
+                            </p>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <span class="px-2.5 py-1 text-[10px] rounded-lg glass text-white/45">Esports</span>
+                                <span class="px-2.5 py-1 text-[10px] rounded-lg glass text-white/45">Tournament</span>
+                                <span class="px-2.5 py-1 text-[10px] rounded-lg glass text-white/45">English</span>
+                                <span class="flex items-center gap-1 text-[10px]" style="color: var(--dim);">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                    Started 2h 14m ago
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button id="followBtn" onclick="toggleFollow()" class="follow-btn px-5 py-2 rounded-xl text-xs font-bold text-white cursor-pointer border-0">
+                                    Follow
+                                </button>
+                                <button onclick="showToast('Subscribed to NovaCraft_Esports')" class="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium text-white/50 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer border-0" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                    Subscribe
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- RECOMMENDED LIVE STREAMS -->
+                <section class="px-4 sm:px-6 pb-10">
+                    <h3 class="text-sm font-bold mb-4 flex items-center gap-2">
+                        <span class="w-1 h-4 rounded-full" style="background: var(--accent);"></span>
+                        Recommended Live Streams
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4" id="recGrid"></div>
+                </section>
+            </div>
+
+            <!-- RIGHT: CHAT PANEL -->
+            <aside class="w-full lg:w-[360px] xl:w-[400px] shrink-0 flex flex-col border-l border-white/[0.04] bg-[var(--chat-bg)] lg:h-[calc(100vh-58px-44px)] lg:sticky lg:top-[102px]" aria-label="Live chat">
+
+                <!-- Chat header -->
+                <div class="px-4 py-3 border-b border-white/[0.04] flex items-center justify-between shrink-0">
+                    <div class="flex items-center gap-2">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="text-white/30"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        <span class="text-xs font-semibold">Live Chat</span>
+                        <span class="text-[10px] tabular-nums text-white/25" id="chatUsers">3,421 chatting</span>
+                    </div>
+                    <button class="p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors" aria-label="Chat settings">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="text-white/25"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                    </button>
+                </div>
+
+                <!-- Chat messages -->
+                <div class="flex-1 overflow-y-auto px-4 py-3 space-y-3" id="chatMessages">
+                    <!-- Populated by JS -->
+                </div>
+
+                <!-- Emoji panel (hidden by default) -->
+                <div id="emojiPanel" class="emoji-panel hidden absolute bottom-16 left-4 right-4 glass-solid rounded-xl p-3 shadow-2xl shadow-black/60 z-10">
+                    <div class="grid grid-cols-8 gap-1">
+                        <button onclick="insertEmoji('😂')" class="w-8 h-8 rounded-lg hover:bg-white/[0.08] flex items-center justify-center text-base transition-colors">😂</button>
+                        <button onclick="insertEmoji('🔥')" class="w-8 h-8 rounded-lg hover:bg-white/[0.08] flex items-center justify-center text-base transition-colors">🔥</button>
+                        <button onclick="insertEmoji('❤️')" class="w-8 h-8 rounded-lg hover:bg-white/[0.08] flex items-center justify-center text-base transition-colors">❤️</button>
+                        <button onclick="insertEmoji('👏')" class="w-8 h-8 rounded-lg hover:bg-white/[0.08] flex items-center justify-center text-base transition-colors">👏</button>
+                        <button onclick="insertEmoji('💯')" class="w-8 h-8 rounded-lg hover:bg-white/[0.08] flex items-center justify-center text-base transition-colors">💯</button>
+                        <button onclick="insertEmoji('🎮')" class="w-8 h-8 rounded-lg hover:bg-white/[0.08] flex items-center justify-center text-base transition-colors">🎮</button>
+                        <button onclick="insertEmoji('⭐')" class="w-8 h-8 rounded-lg hover:bg-white/[0.08] flex items-center justify-center text-base transition-colors">⭐</button>
+                        <button onclick="insertEmoji('🎉')" class="w-8 h-8 rounded-lg hover:bg-white/[0.08] flex items-center justify-center text-base transition-colors">🎉</button>
+                        <button onclick="insertEmoji('😭')" class="w-8 h-8 rounded-lg hover:bg-white/[0.08] flex items-center justify-center text-base transition-colors">😭</button>
+                        <button onclick="insertEmoji('💀')" class="w-8 h-8 rounded-lg hover:bg-white/[0.08] flex items-center justify-center text-base transition-colors">💀</button>
+                        <button onclick="insertEmoji('🤯')" class="w-8 h-8 rounded-lg hover:bg-white/[0.08] flex items-center justify-center text-base transition-colors">🤯</button>
+                        <button onclick="insertEmoji('😎')" class="w-8 h-8 rounded-lg hover:bg-white/[0.08] flex items-center justify-center text-base transition-colors">😎</button>
+                        <button onclick="insertEmoji('💪')" class="w-8 h-8 rounded-lg hover:bg-white/[0.08] flex items-center justify-center text-base transition-colors">💪</button>
+                        <button onclick="insertEmoji('🚀')" class="w-8 h-8 rounded-lg hover:bg-white/[0.08] flex items-center justify-center text-base transition-colors">🚀</button>
+                        <button onclick="insertEmoji('👀')" class="w-8 h-8 rounded-lg hover:bg-white/[0.08] flex items-center justify-center text-base transition-colors">👀</button>
+                        <button onclick="insertEmoji('🏆')" class="w-8 h-8 rounded-lg hover:bg-white/[0.08] flex items-center justify-center text-base transition-colors">🏆</button>
+                    </div>
+                </div>
+
+                <!-- Chat input -->
+                <div class="px-4 py-3 border-t border-white/[0.04] shrink-0 relative">
+                    <div class="flex items-center gap-2">
+                        <!-- Emoji button -->
+                        <button onclick="toggleEmoji()" class="w-9 h-9 rounded-xl hover:bg-white/[0.06] flex items-center justify-center transition-colors shrink-0" aria-label="Emoji picker" id="emojiBtn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="text-white/30"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                        </button>
+                        <!-- Input -->
+                        <input id="chatInput" type="text" placeholder="Send a message..." maxlength="200" class="chat-input flex-1 bg-white/[0.04] border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-white/20 focus:outline-none transition-all" onkeydown="if(event.key==='Enter')sendChat()">
+                        <!-- Send -->
+                        <button onclick="sendChat()" class="send-btn w-9 h-9 rounded-xl flex items-center justify-center shrink-0 cursor-pointer border-0" aria-label="Send message">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <!-- TOAST -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] glass-solid px-5 py-3 rounded-2xl text-xs font-medium shadow-2xl shadow-black/50 translate-y-4 opacity-0 pointer-events-none flex items-center gap-2 transition-all duration-300" style="border-color: rgba(229,9,20,0.15);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <span id="toastMsg" class="text-white/70"></span>
+    </div>
+
+    <script>
+        // ============================
+        // Chat data
+        // ============================
+        const chatUsers = [
+            { name: 'ShadowStrike',  color: '#ef4444', avatar: 'usr1' },
+            { name: 'PixelQueen',    color: '#ec4899', avatar: 'usr2' },
+            { name: 'TurboGamer',    color: '#f59e0b', avatar: 'usr3' },
+            { name: 'NeonBlade',     color: '#22c55e', avatar: 'usr4' },
+            { name: 'CrystalFrost',  color: '#06b6d4', avatar: 'usr5' },
+            { name: 'IronWolf',      color: '#a78bfa', avatar: 'usr6' },
+            { name: 'BlazeRunner',   color: '#f97316', avatar: 'usr7' },
+            { name: 'VoidWalker',    color: '#8b5cf6', avatar: 'usr8' },
+            { name: 'SilverArrow',   color: '#64748b', avatar: 'usr9' },
+            { name: 'PhoenixRise',   color: '#eab308', avatar: 'usr10' },
+            { name: 'DarkMatter',    color: '#14b8a6', avatar: 'usr11' },
+            { name: 'StormBreaker',  color: '#3b82f6', avatar: 'usr12' },
+        ];
+
+        const chatMessages = [
+            "Let's gooo! This is gonna be insane",
+            "Team Alpha looking strong tonight",
+            "That last play was absolutely cracked",
+            "Can't believe that clutch round",
+            "Who else is watching at 3am?",
+            "The production quality is amazing",
+            "GG well played both teams",
+            "This caster is hilarious",
+            "500K on the line... no pressure",
+            "Chat, who you got for the finals?",
+            "That ultimate was perfectly timed",
+            "First time watching this tournament, hooked already",
+            "The crowd is going wild right now",
+            "Insane mechanics from the support player",
+            "This map is heavily favored for defense",
+            "Pixel perfect aim right there",
+            "Chat is moving so fast rn",
+            "Economy round incoming, smart play",
+            "NO WAY did that just happen",
+            "MVP so far has to be the captain",
+            "Someone clip that last fight",
+            "Best tournament of the year easily",
+            "The setup they ran was genius",
+            "Double kill out of nowhere!",
+            "This game is beautiful at 4K",
+            "Streamer deserves way more viewers",
+            "Reminds me of the 2023 finals",
+            "Adrenaline watching this live",
+            "The analysts called this perfectly",
+        ];
+
+        // Recommended streams data
+        const recommended = [
+            { title: "Ranked Grind to Diamond — Road to Top 100", streamer: "AceFury", viewers: "8,231", game: "Valorant", image: "recstream1" },
+            { title: "Chill Art Stream — Drawing Fan Art Live", streamer: "LunaSketch", viewers: "3,412", game: "Art", image: "recstream2" },
+            { title: "Hardcore Survival Day 47 — No Deaths", streamer: "IronWill", viewers: "12,891", game: "Survival", image: "recstream3" },
+            { title: "Speedrunning Classic Games — WR Attempts", streamer: "FlashStep", viewers: "5,672", game: "Speedrun", image: "recstream4" },
+            { title: "Music Production Live — New Album", streamer: "BassDrop", viewers: "2,198", game: "Music", image: "recstream5" },
+            { title: "Pro Scrims — Team Practice Session", streamer: "TeamZenith", viewers: "6,445", game: "Esports", image: "recstream6" },
+        ];
+
+        // ============================
+        // State
+        // ============================
+        let isMuted = false;
+        let isFollowing = false;
+        let emojiOpen = false;
+        let qualOpen = false;
+        let viewerBase = 24831;
+        let msgIndex = 0;
+
+        // ============================
+        // Render recommended streams
+        // ============================
+        function renderRecommended() {
+            const grid = document.getElementById('recGrid');
+            grid.innerHTML = recommended.map(r => `
+                <div class="rec-card glass rounded-2xl overflow-hidden cursor-pointer" onclick="showToast('Opening: ${r.title.replace(/'/g, "\\'")}')">
+                    <div class="relative aspect-video overflow-hidden">
+                        <img src="https://picsum.photos/seed/${r.image}/640/360" alt="${r.title}" class="rec-thumb w-full h-full object-cover" loading="lazy">
+                        <div class="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-0.5 rounded-md" style="background: rgba(229,9,20,0.85);">
+                            <span class="live-dot w-1.5 h-1.5 rounded-full bg-white"></span>
+                            <span class="text-[9px] font-bold tracking-wider">LIVE</span>
+                        </div>
+                        <div class="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/70">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-white/40"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <span class="text-[9px] font-medium tabular-nums text-white/60">${r.viewers}</span>
+                        </div>
+                    </div>
+                    <div class="px-3.5 py-3">
+                        <p class="text-xs font-semibold truncate leading-snug mb-1.5">${r.title}</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-medium" style="color: var(--muted);">${r.streamer}</span>
+                            <span class="text-[9px] px-2 py-0.5 rounded-md glass text-white/35">${r.game}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ============================
+        // Chat simulation
+        // ============================
+        function getTime() {
+            const now = new Date();
+            return now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+        }
+
+        function addChatMessage(user, text, isSystem) {
+            const container = document.getElementById('chatMessages');
+            const div = document.createElement('div');
+            div.className = 'chat-msg';
+
+            if (isSystem) {
+                div.innerHTML = `<p class="text-[10px] text-center py-1" style="color: var(--dim);">${text}</p>`;
+            } else {
+                div.innerHTML = `
+                    <div class="flex items-start gap-2.5">
+                        <img src="https://picsum.photos/seed/${user.avatar}/48/48" alt="${user.name}" class="w-7 h-7 rounded-lg object-cover shrink-0 mt-0.5">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2 mb-0.5">
+                                <span class="text-[11px] font-semibold truncate" style="color: ${user.color};">${user.name}</span>
+                                <span class="text-[9px] tabular-nums" style="color: var(--dim);">${getTime()}</span>
+                            </div>
+                            <p class="text-xs leading-relaxed" style="color: rgba(255,255,255,0.6);">${text}</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.appendChild(div);
+
+            // Auto-scroll to bottom
+            container.scrollTop = container.scrollHeight;
+
+            // Keep max 80 messages
+            while (container.children.length > 80) {
+                container.removeChild(container.firstChild);
+            }
+        }
+
+        function sendChat() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            addChatMessage({ name: 'You', color: '#e50914', avatar: 'myavatar' }, text, false);
+            input.value = '';
+
+            if (emojiOpen) toggleEmoji();
+        }
+
+        // Auto-generate chat messages
+        function autoChat() {
+            const user = chatUsers[Math.floor(Math.random() * chatUsers.length)];
+            const msg = chatMessages[msgIndex % chatMessages.length];
+            msgIndex++;
+            addChatMessage(user, msg, false);
+        }
+
+        // Start with some messages
+        function initChat() {
+            addChatMessage(null, 'Welcome to the live chat. Be respectful and have fun!', true);
+            const initial = [
+                { user: chatUsers[0], msg: chatMessages[0] },
+                { user: chatUsers[2], msg: chatMessages[2] },
+                { user: chatUsers[4], msg: chatMessages[5] },
+                { user: chatUsers[1], msg: chatMessages[8] },
+                { user: chatUsers[3], msg: chatMessages[11] },
+                { user: chatUsers[6], msg: chatMessages[18] },
+            ];
+            initial.forEach((m, i) => {
+                setTimeout(() => addChatMessage(m.user, m.msg, false), i * 100);
+            });
+
+            // Continue auto chat every 2-5 seconds
+            function scheduleNext() {
+                const delay = 2000 + Math.random() * 3000;
+                setTimeout(() => {
+                    autoChat();
+                    scheduleNext();
+                }, delay);
+            }
+            scheduleNext();
+        }
+
+        // ============================
+        // Viewer count simulation
+        // ============================
+        function updateViewers() {
+            viewerBase += Math.floor(Math.random() * 40) - 18; // slight fluctuation
+            viewerBase = Math.max(24000, viewerBase);
+            const formatted = viewerBase.toLocaleString();
+            document.getElementById('viewerCount').textContent = formatted;
+            document.getElementById('viewerOverlay').textContent = formatted;
+        }
+
+        // ============================
+        // Interactions
+        // ============================
+        function toggleMute() {
+            isMuted = !isMuted;
+            const icon = document.getElementById('volIcon');
+            if (isMuted) {
+                icon.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>';
+            } else {
+                icon.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>';
+            }
+        }
+
+        function toggleFollow() {
+            isFollowing = !isFollowing;
+            const btn = document.getElementById('followBtn');
+            if (isFollowing) {
+                btn.textContent = 'Following';
+                btn.classList.add('following');
+                showToast('Now following NovaCraft_Esports');
+            } else {
+                btn.textContent = 'Follow';
+                btn.classList.remove('following');
+                showToast('Unfollowed NovaCraft_Esports');
+            }
+        }
+
+        function toggleEmoji() {
+            emojiOpen = !emojiOpen;
+            document.getElementById('emojiPanel').classList.toggle('hidden', !emojiOpen);
+            if (emojiOpen) qualOpen = false, document.getElementById('qualDrop').classList.add('hidden');
+        }
+
+        function insertEmoji(emoji) {
+            const input = document.getElementById('chatInput');
+            input.value += emoji;
+            input.focus();
+        }
+
+        function toggleQuality() {
+            qualOpen = !qualOpen;
+            document.getElementById('qualDrop').classList.toggle('hidden', !qualOpen);
+            if (qualOpen) emojiOpen = false, document.getElementById('emojiPanel').classList.add('hidden');
+        }
+
+        function setQuality(q) {
+            document.getElementById('qualLabel').textContent = q;
+            document.querySelectorAll('.qual-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            toggleQuality();
+            showToast('Quality changed to ' + q);
+        }
+
+        function toggleFullscreen() {
+            const player = document.querySelector('[aria-label="Live video player"]');
+            if (!document.fullscreenElement) {
+                player.requestFullscreen?.() || player.webkitRequestFullscreen?.();
+            } else {
+                document.exitFullscreen?.() || document.webkitExitFullscreen?.();
+            }
+        }
+
+        // Close dropdowns on outside click
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#emojiPanel') && !e.target.closest('#emojiBtn')) {
+                if (emojiOpen) { emojiOpen = false; document.getElementById('emojiPanel').classList.add('hidden'); }
+            }
+            if (!e.target.closest('#qualDrop') && !e.target.closest('[aria-label="Change quality"]')) {
+                if (qualOpen) { qualOpen = false; document.getElementById('qualDrop').classList.add('hidden'); }
+            }
+        });
+
+        // ============================
+        // Toast
+        // ============================
+        let toastTimer = null;
+        function showToast(msg) {
+            clearTimeout(toastTimer);
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = msg;
+            t.style.transform = 'translate(-50%, 0)';
+            t.style.opacity = '1';
+            t.style.pointerEvents = 'auto';
+            toastTimer = setTimeout(() => {
+                t.style.transform = 'translate(-50%, 16px)';
+                t.style.opacity = '0';
+                t.style.pointerEvents = 'none';
+            }, 2500);
+        }
+
+        // ============================
+        // Init
+        // ============================
+        renderRecommended();
+        initChat();
+        setInterval(updateViewers, 3000);
+    </script>
+</body>
+</html>
