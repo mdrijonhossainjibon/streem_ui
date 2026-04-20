@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamVault — Movies</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        body: ['"Sora"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --bg: #06060d;
+            --card: rgba(255,255,255,0.025);
+            --card-border: rgba(255,255,255,0.055);
+            --accent: #e50914;
+            --accent-glow: rgba(229,9,20,0.3);
+            --purple: #8b5cf6;
+            --purple-glow: rgba(139,92,246,0.25);
+            --cyan: #06b6d4;
+            --cyan-glow: rgba(6,182,212,0.25);
+            --muted: rgba(255,255,255,0.38);
+            --dim: rgba(255,255,255,0.16);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Sora', sans-serif;
+            background: var(--bg);
+            color: #fff;
+            overflow-x: hidden;
+        }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+        .glass {
+            background: var(--card);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--card-border);
+        }
+        .glass-strong {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(32px);
+            -webkit-backdrop-filter: blur(32px);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        /* Atmospheric orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(140px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .orb-1 { width: 550px; height: 550px; top: -200px; right: -150px; background: var(--accent); opacity: 0.045; animation: d1 16s ease-in-out infinite; }
+        .orb-2 { width: 480px; height: 480px; bottom: -180px; left: -120px; background: var(--purple); opacity: 0.035; animation: d2 19s ease-in-out infinite; }
+        .orb-3 { width: 350px; height: 350px; top: 40%; left: 30%; background: var(--cyan); opacity: 0.02; animation: d3 13s ease-in-out infinite; }
+        @keyframes d1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-30px,25px) scale(1.1); } }
+        @keyframes d2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(25px,-30px) scale(1.12); } }
+        @keyframes d3 { 0%,100% { transform: scale(1); opacity: 0.02; } 50% { transform: scale(1.25); opacity: 0.03; } }
+
+        /* Noise */
+        .noise {
+            position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0.01;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size: 200px;
+        }
+
+        /* Hero zoom */
+        .hero-zoom { animation: heroIn 1.6s ease-out both; }
+        @keyframes heroIn { from { transform: scale(1.12); } to { transform: scale(1); } }
+
+        /* Category scroll */
+        .cat-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+        .cat-scroll::-webkit-scrollbar { display: none; }
+
+        /* Movie card */
+        .movie-card {
+            transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s ease;
+        }
+        .movie-card:hover {
+            transform: translateY(-8px) scale(1.04);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 25px var(--accent-glow);
+            z-index: 10;
+        }
+        .movie-card .poster { transition: transform 0.6s ease; }
+        .movie-card:hover .poster { transform: scale(1.1); }
+
+        /* Play overlay */
+        .play-overlay {
+            opacity: 0;
+            transform: scale(0.7);
+            transition: opacity 0.35s ease, transform 0.35s ease;
+        }
+        .movie-card:hover .play-overlay {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Slider */
+        .slider-track {
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .slider-track::-webkit-scrollbar { display: none; }
+        .slider-item { scroll-snap-align: start; }
+
+        /* Fade in */
+        .fade-up {
+            opacity: 0;
+            transform: translateY(28px);
+            transition: opacity 0.7s ease, transform 0.7s ease;
+        }
+        .fade-up.visible { opacity: 1; transform: translateY(0); }
+        .fade-up.d1 { transition-delay: 0.1s; }
+        .fade-up.d2 { transition-delay: 0.2s; }
+        .fade-up.d3 { transition-delay: 0.3s; }
+
+        /* Button glow */
+        .btn-glow {
+            background: linear-gradient(135deg, var(--accent), #dc2626);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .btn-glow:hover {
+            transform: scale(1.04);
+            box-shadow: 0 0 24px var(--accent-glow), 0 0 50px rgba(229,9,20,0.12), 0 8px 30px rgba(0,0,0,0.4);
+        }
+        .btn-glow:active { transform: scale(0.97); }
+
+        /* Focus visible */
+        *:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+        }
+
+        /* Rating star color */
+        .star-gold { color: #f59e0b; }
+
+        /* Toast */
+        .toast {
+            transition: transform 0.35s ease, opacity 0.35s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen relative">
+
+    <!-- Background -->
+    <div class="orb orb-1" aria-hidden="true"></div>
+    <div class="orb orb-2" aria-hidden="true"></div>
+    <div class="orb orb-3" aria-hidden="true"></div>
+    <div class="noise" aria-hidden="true"></div>
+
+    <!-- ========== NAVBAR ========== -->
+    <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+        <div class="glass px-4 sm:px-6 py-3 flex items-center gap-3 sm:gap-5">
+            <!-- Logo -->
+            <a href="#" class="flex items-center gap-2.5 shrink-0">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, var(--accent), var(--purple));">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M8 5.14v13.72a.5.5 0 0 0 .75.43l11.5-6.86a.5.5 0 0 0 0-.86L8.75 4.71a.5.5 0 0 0-.75.43Z" fill="#fff"/></svg>
+                </div>
+                <span class="font-bold text-sm tracking-wide hidden sm:inline">STREAMVAULT</span>
+            </a>
+
+            <!-- Nav links -->
+            <div class="hidden md:flex items-center gap-1">
+                <a href="#" class="px-3 py-1.5 rounded-xl text-xs font-medium text-white/40 hover:text-white hover:bg-white/[0.05] transition-colors">Home</a>
+                <a href="#" class="px-3 py-1.5 rounded-xl text-xs font-medium text-white bg-white/[0.07]">Movies</a>
+                <a href="#" class="px-3 py-1.5 rounded-xl text-xs font-medium text-white/40 hover:text-white hover:bg-white/[0.05] transition-colors">Series</a>
+                <a href="#" class="px-3 py-1.5 rounded-xl text-xs font-medium text-white/40 hover:text-white hover:bg-white/[0.05] transition-colors">My List</a>
+            </div>
+
+            <!-- Search -->
+            <div class="flex-1 max-w-md mx-auto relative">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-white/25" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <input id="searchInput" type="text" placeholder="Search movies..." class="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white/[0.05] border border-white/[0.06] text-sm text-white placeholder-white/25 focus:outline-none focus:border-white/15 focus:bg-white/[0.08] transition-all" aria-label="Search movies" oninput="handleSearch()">
+            </div>
+
+            <!-- Right -->
+            <div class="flex items-center gap-2 shrink-0">
+                <button class="p-2 rounded-xl hover:bg-white/[0.06] transition-colors relative" aria-label="Notifications">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style="background: var(--accent);"></span>
+                </button>
+                <button class="w-8 h-8 rounded-xl overflow-hidden border-2 border-transparent hover:border-white/15 transition-colors" aria-label="Profile">
+                    <img src="https://picsum.photos/seed/avatar77/64/64" alt="Profile" class="w-full h-full object-cover">
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ========== MAIN ========== -->
+    <main class="relative z-10 pt-16">
+
+        <!-- HERO BANNER -->
+        <section class="relative h-[60vh] min-h-[420px] max-h-[600px] overflow-hidden">
+            <div class="absolute inset-0">
+                <img src="https://picsum.photos/seed/lasthorizon/1920/1080" alt="Featured movie" class="w-full h-full object-cover hero-zoom">
+            </div>
+            <div class="absolute inset-0 bg-gradient-to-t from-[var(--bg)] via-[var(--bg)]/50 to-transparent"></div>
+            <div class="absolute inset-0 bg-gradient-to-r from-[var(--bg)]/80 via-[var(--bg)]/30 to-transparent"></div>
+            <div class="absolute inset-0 bg-[var(--bg)]/20"></div>
+
+            <div class="relative z-10 h-full flex items-end pb-12 sm:pb-16 px-4 sm:px-8 lg:px-14">
+                <div class="max-w-xl" style="animation: fadeUp 0.9s 0.2s ease-out both;">
+                    @keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+                    <div class="flex items-center gap-2.5 mb-3">
+                        <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-md" style="background: var(--accent); color:#fff;">FEATURED</span>
+                        <span class="text-[11px] text-white/40">2025</span>
+                        <span class="w-1 h-1 rounded-full bg-white/20"></span>
+                        <span class="text-[11px] text-white/40">2h 28m</span>
+                        <span class="w-1 h-1 rounded-full bg-white/20"></span>
+                        <span class="flex items-center gap-1 text-[11px] star-gold">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                            8.9
+                        </span>
+                    </div>
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[0.95] mb-3">THE LAST<br>HORIZON</h1>
+                    <p class="text-sm text-white/50 leading-relaxed max-w-md mb-2">A retired astronaut discovers a signal from beyond the known universe that could redefine humanity's future.</p>
+                    <div class="flex flex-wrap gap-2 mb-5">
+                        <span class="px-3 py-1 text-[11px] rounded-full glass text-white/50">Sci-Fi</span>
+                        <span class="px-3 py-1 text-[11px] rounded-full glass text-white/50">Drama</span>
+                        <span class="px-3 py-1 text-[11px] rounded-full glass text-white/50">Adventure</span>
+                    </div>
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="showToast('Now playing: The Last Horizon')" class="btn-glow flex items-center gap-2 px-7 py-3 rounded-2xl text-sm font-semibold text-white cursor-pointer border-0">
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                            Watch Now
+                        </button>
+                        <button onclick="toggleList(this)" class="flex items-center gap-2 px-5 py-3 rounded-2xl glass hover:bg-white/[0.08] text-white/70 text-sm font-medium cursor-pointer transition-all border-0">
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            My List
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CATEGORY CHIPS -->
+        <section class="px-4 sm:px-8 lg:px-14 -mt-5 relative z-20 mb-8 fade-up">
+            <div class="cat-scroll flex gap-2 overflow-x-auto py-1" id="categoryBar" role="tablist"></div>
+        </section>
+
+        <!-- TRENDING NOW -->
+        <section class="px-4 sm:px-8 lg:px-14 mb-12 fade-up d1">
+            <div class="flex items-center justify-between mb-5">
+                <h2 class="text-lg sm:text-xl font-bold flex items-center gap-3">
+                    <span class="w-1 h-5 rounded-full" style="background: var(--accent);"></span>
+                    Trending Now
+                    <svg class="w-4 h-4 text-white/20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                </h2>
+                <button class="text-xs text-white/30 hover:text-white/60 transition-colors">See All</button>
+            </div>
+            <div class="slider-track flex gap-4 overflow-x-auto pb-2" id="trendingTrack"></div>
+        </section>
+
+        <!-- MOVIE GRID -->
+        <section class="px-4 sm:px-8 lg:px-14 pb-20 fade-up d2">
+            <div class="flex items-center justify-between mb-5">
+                <h2 class="text-lg sm:text-xl font-bold flex items-center gap-3" id="gridTitle">
+                    <span class="w-1 h-5 rounded-full" style="background: var(--purple);"></span>
+                    All Movies
+                </h2>
+                <span class="text-xs text-white/25" id="gridCount"></span>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5" id="movieGrid"></div>
+            <p id="noResults" class="hidden text-center text-white/25 py-20 text-sm">No movies found. Try a different search or category.</p>
+        </section>
+
+    </main>
+
+    <!-- ========== FOOTER ========== -->
+    <footer class="relative z-10 border-t border-white/[0.04]">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-5 h-5 rounded flex items-center justify-center" style="background: linear-gradient(135deg, var(--accent), var(--purple));">
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><path d="M8 5.14v13.72a.5.5 0 0 0 .75.43l11.5-6.86a.5.5 0 0 0 0-.86L8.75 4.71a.5.5 0 0 0-.75.43Z" fill="#fff"/></svg>
+                    </div>
+                    <span class="text-[11px]" style="color: var(--dim);">STREAMVAULT</span>
+                </div>
+                <div class="flex items-center gap-5 text-[11px]" style="color: var(--dim);">
+                    <a href="#" class="hover:text-white/40 transition-colors">Terms</a>
+                    <a href="#" class="hover:text-white/40 transition-colors">Privacy</a>
+                    <a href="#" class="hover:text-white/40 transition-colors">Help</a>
+                </div>
+                <p class="text-[10px]" style="color: rgba(255,255,255,0.08);">2025 StreamVault Inc.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- TOAST -->
+    <div id="toast" class="toast fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] glass-strong px-5 py-3 rounded-2xl text-sm font-medium shadow-2xl shadow-black/50 translate-y-4 opacity-0 pointer-events-none flex items-center gap-2.5">
+        <svg id="toastIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <span id="toastMsg"></span>
+    </div>
+
+    <script>
+        // =====================
+        // Movie data
+        // =====================
+        const genres = ['All', 'Action', 'Drama', 'Horror', 'Comedy', 'Sci-Fi', 'Thriller'];
+
+        const movies = [
+            { id: 1,  title: "Crimson Inferno",     genre: "Action",   rating: 8.2, duration: "2h 15m", year: 2025, image: "crimsoninf" },
+            { id: 2,  title: "Neon Shadows",        genre: "Sci-Fi",   rating: 7.8, duration: "1h 52m", year: 2024, image: "neonshad2" },
+            { id: 3,  title: "The Silent Witness",  genre: "Thriller", rating: 8.5, duration: "2h 05m", year: 2025, image: "silentwit" },
+            { id: 4,  title: "Laughing Matters",    genre: "Comedy",   rating: 7.1, duration: "1h 38m", year: 2024, image: "laughmat" },
+            { id: 5,  title: "Hollow Ground",       genre: "Horror",   rating: 7.6, duration: "1h 45m", year: 2025, image: "hollowgr" },
+            { id: 6,  title: "Empire of Dust",      genre: "Drama",    rating: 9.0, duration: "2h 32m", year: 2025, image: "empdust" },
+            { id: 7,  title: "Steel Thunder",       genre: "Action",   rating: 7.9, duration: "2h 10m", year: 2024, image: "steelthun" },
+            { id: 8,  title: "Parallel Worlds",     genre: "Sci-Fi",   rating: 8.1, duration: "2h 18m", year: 2025, image: "parworld" },
+            { id: 9,  title: "Whispers in Dark",    genre: "Horror",   rating: 7.3, duration: "1h 40m", year: 2024, image: "whispdark" },
+            { id: 10, title: "The Grand Scheme",    genre: "Thriller", rating: 8.7, duration: "2h 22m", year: 2025, image: "grandsch" },
+            { id: 11, title: "Midnight Bloom",      genre: "Drama",    rating: 8.4, duration: "1h 55m", year: 2024, image: "midbloom" },
+            { id: 12, title: "Riot Protocol",       genre: "Action",   rating: 7.5, duration: "2h 01m", year: 2025, image: "riotproto" },
+            { id: 13, title: "Cosmic Drift",        genre: "Sci-Fi",   rating: 8.3, duration: "2h 08m", year: 2025, image: "cosmdrift" },
+            { id: 14, title: "Oddly Enough",        genre: "Comedy",   rating: 6.9, duration: "1h 35m", year: 2024, image: "oddlyenf" },
+            { id: 15, title: "The Abyss Stares",    genre: "Horror",   rating: 7.8, duration: "1h 50m", year: 2025, image: "abyssstar" },
+            { id: 16, title: "Fractured Loyalty",   genre: "Thriller", rating: 8.0, duration: "2h 12m", year: 2024, image: "fractloy" },
+            { id: 17, title: "Glass Kingdom",       genre: "Drama",    rating: 8.8, duration: "2h 25m", year: 2025, image: "glassking" },
+            { id: 18, title: "Warpath Rising",      genre: "Action",   rating: 7.4, duration: "2h 20m", year: 2024, image: "warpathr" },
+            { id: 19, title: "Time Echoes",         genre: "Sci-Fi",   rating: 7.7, duration: "1h 58m", year: 2025, image: "timeecho" },
+            { id: 20, title: "Happy Catastrophe",   genre: "Comedy",   rating: 7.2, duration: "1h 42m", year: 2025, image: "happycat" },
+            { id: 21, title: "Dead Signal",         genre: "Horror",   rating: 8.1, duration: "1h 48m", year: 2024, image: "deadsig" },
+            { id: 22, title: "The Verdict",         genre: "Thriller", rating: 8.6, duration: "2h 15m", year: 2025, image: "verdict" },
+            { id: 23, title: "Fading Embers",       genre: "Drama",    rating: 8.3, duration: "2h 02m", year: 2024, image: "fadeember" },
+            { id: 24, title: "Iron Vanguard",       genre: "Action",   rating: 7.6, duration: "2h 08m", year: 2025, image: "ironvan" },
+        ];
+
+        // Trending subset (top rated)
+        const trending = movies.filter(m => m.rating >= 8.3).slice(0, 8);
+
+        // =====================
+        // State
+        // =====================
+        let activeGenre = 'All';
+        let searchQuery = '';
+
+        // =====================
+        // Render categories
+        // =====================
+        function renderCategories() {
+            const bar = document.getElementById('categoryBar');
+            bar.innerHTML = genres.map(g => {
+                const active = g === activeGenre;
+                return `<button role="tab" aria-selected="${active}" onclick="setGenre('${g}')" class="shrink-0 px-4 py-2 rounded-full text-xs font-medium transition-all duration-300 cursor-pointer border-0 ${active ? 'text-white' : 'glass text-white/45 hover:text-white/70 hover:bg-white/[0.06]'}" ${active ? 'style="background:linear-gradient(135deg,var(--accent),#b91c1c);box-shadow:0 0 18px var(--accent-glow);"' : ''}>${g}</button>`;
+            }).join('');
+        }
+
+        // =====================
+        // Render trending slider
+        // =====================
+        function renderTrending() {
+            const track = document.getElementById('trendingTrack');
+            track.innerHTML = trending.map(m => `
+                <div class="slider-item shrink-0 w-44 sm:w-52 cursor-pointer movie-card rounded-2xl overflow-hidden" onclick="showToast('Now playing: ${m.title.replace(/'/g, "\\'")}')">
+                    <div class="relative aspect-[2/3] overflow-hidden rounded-2xl">
+                        <img src="https://picsum.photos/seed/${m.image}/400/600" alt="${m.title}" class="poster w-full h-full object-cover" loading="lazy">
+                        <div class="play-overlay absolute inset-0 bg-black/45 flex items-center justify-center">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background:var(--accent);box-shadow:0 0 20px var(--accent-glow);">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+                            </div>
+                        </div>
+                        <span class="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold star-gold" style="background:rgba(0,0,0,0.7);">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                            ${m.rating}
+                        </span>
+                        <span class="absolute top-2 right-2 px-1.5 py-0.5 rounded text-[9px] font-medium bg-black/60 text-white/60">${m.duration}</span>
+                        <div class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/70 to-transparent pointer-events-none"></div>
+                    </div>
+                    <div class="px-1 pt-2.5 pb-1">
+                        <h3 class="text-xs font-semibold truncate">${m.title}</h3>
+                        <p class="text-[10px] mt-0.5" style="color:var(--dim);">${m.genre} · ${m.year}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // =====================
+        // Render movie grid
+        // =====================
+        function renderGrid() {
+            const grid = document.getElementById('movieGrid');
+            const noRes = document.getElementById('noResults');
+            const title = document.getElementById('gridTitle');
+            const count = document.getElementById('gridCount');
+
+            let filtered = movies;
+
+            if (activeGenre !== 'All') {
+                filtered = filtered.filter(m => m.genre === activeGenre);
+            }
+            if (searchQuery.trim()) {
+                const q = searchQuery.toLowerCase();
+                filtered = filtered.filter(m => m.title.toLowerCase().includes(q) || m.genre.toLowerCase().includes(q));
+            }
+
+            const label = searchQuery.trim() ? 'Search Results' : (activeGenre === 'All' ? 'All Movies' : activeGenre);
+            title.innerHTML = `<span class="w-1 h-5 rounded-full" style="background:var(--purple);"></span>${label}`;
+            count.textContent = `${filtered.length} movie${filtered.length !== 1 ? 's' : ''}`;
+
+            if (!filtered.length) {
+                grid.innerHTML = '';
+                noRes.classList.remove('hidden');
+                return;
+            }
+            noRes.classList.add('hidden');
+
+            grid.innerHTML = filtered.map(m => `
+                <div class="movie-card cursor-pointer rounded-2xl overflow-hidden" onclick="showToast('Now playing: ${m.title.replace(/'/g, "\\'")}')">
+                    <div class="relative aspect-[2/3] overflow-hidden">
+                        <img src="https://picsum.photos/seed/${m.image}/400/600" alt="${m.title}" class="poster w-full h-full object-cover" loading="lazy">
+                        <div class="play-overlay absolute inset-0 bg-black/45 flex items-center justify-center">
+                            <div class="w-11 h-11 rounded-full flex items-center justify-center" style="background:var(--accent);box-shadow:0 0 18px var(--accent-glow);">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+                            </div>
+                        </div>
+                        <span class="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold star-gold" style="background:rgba(0,0,0,0.7);">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                            ${m.rating}
+                        </span>
+                        <span class="absolute top-2 right-2 px-1.5 py-0.5 rounded text-[9px] font-medium bg-black/60 text-white/60">${m.duration}</span>
+                        <div class="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/70 to-transparent pointer-events-none"></div>
+                        <div class="absolute bottom-2 left-2.5 right-2.5 pointer-events-none">
+                            <h3 class="text-xs font-semibold truncate leading-snug">${m.title}</h3>
+                            <p class="text-[10px] mt-0.5" style="color:rgba(255,255,255,0.45);">${m.genre} · ${m.year}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // =====================
+        // Interactions
+        // =====================
+        function setGenre(genre) {
+            activeGenre = genre;
+            renderCategories();
+            renderGrid();
+        }
+
+        function handleSearch() {
+            searchQuery = document.getElementById('searchInput').value;
+            renderGrid();
+        }
+
+        function toggleList(btn) {
+            const added = btn.dataset.added === 'true';
+            if (added) {
+                btn.dataset.added = 'false';
+                btn.innerHTML = `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> My List`;
+                btn.style.borderColor = 'transparent';
+                showToast('Removed from your list');
+            } else {
+                btn.dataset.added = 'true';
+                btn.innerHTML = `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Added`;
+                btn.style.borderColor = 'rgba(229,9,20,0.2)';
+                showToast('Added to your list');
+            }
+        }
+
+        // Navbar scroll shadow
+        window.addEventListener('scroll', () => {
+            const nav = document.getElementById('navbar');
+            nav.querySelector('div').style.boxShadow = window.scrollY > 20 ? '0 4px 30px rgba(0,0,0,0.4)' : 'none';
+        });
+
+        // =====================
+        // Toast
+        // =====================
+        let toastTimer = null;
+        function showToast(msg) {
+            clearTimeout(toastTimer);
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = msg;
+            document.getElementById('toastMsg').style.color = 'rgba(255,255,255,0.8)';
+            document.getElementById('toastIcon').setAttribute('stroke', 'var(--green)');
+            document.getElementById('toastIcon').innerHTML = '<polyline points="20 6 9 17 4 12"/>';
+            t.style.transform = 'translate(-50%, 0)';
+            t.style.opacity = '1';
+            t.style.pointerEvents = 'auto';
+            toastTimer = setTimeout(() => {
+                t.style.transform = 'translate(-50%, 16px)';
+                t.style.opacity = '0';
+                t.style.pointerEvents = 'none';
+            }, 2500);
+        }
+
+        // =====================
+        // Drag-to-scroll for sliders
+        // =====================
+        function enableDrag(el) {
+            let down = false, sx, sl;
+            el.addEventListener('mousedown', e => {
+                if (e.target.closest('button, a')) return;
+                down = true; el.style.cursor = 'grabbing';
+                sx = e.pageX - el.offsetLeft; sl = el.scrollLeft;
+            });
+            el.addEventListener('mouseleave', () => { down = false; el.style.cursor = ''; });
+            el.addEventListener('mouseup', () => { down = false; el.style.cursor = ''; });
+            el.addEventListener('mousemove', e => {
+                if (!down) return; e.preventDefault();
+                el.scrollLeft = sl - (e.pageX - el.offsetLeft - sx) * 1.5;
+            });
+        }
+
+        // =====================
+        // Scroll observer
+        // =====================
+        const obs = new IntersectionObserver(entries => {
+            entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+        }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+        document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+
+        // =====================
+        // Init
+        // =====================
+        renderCategories();
+        renderTrending();
+        renderGrid();
+        enableDrag(document.getElementById('trendingTrack'));
+        enableDrag(document.getElementById('categoryBar'));
+    </script>
+
+    <!-- Fix the inline @keyframes that got placed inside the section -->
+    <style>
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</body>
+</html>
