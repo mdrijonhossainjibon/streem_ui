@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamVault — Watch & Download</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { body: ['"Sora"', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --bg: #07070e;
+            --bg-up: #0e0e1a;
+            --card: rgba(255,255,255,0.03);
+            --card-border: rgba(255,255,255,0.055);
+            --accent: #e50914;
+            --accent-glow: rgba(229,9,20,0.35);
+            --purple: #8b5cf6;
+            --purple-glow: rgba(139,92,246,0.25);
+            --cyan: #06b6d4;
+            --muted: rgba(255,255,255,0.4);
+            --dim: rgba(255,255,255,0.18);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Sora', sans-serif; background: var(--bg); color: #fff; overflow-x: hidden; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
+
+        .glass { background: var(--card); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--card-border); }
+        .glass-strong { background: rgba(255,255,255,0.06); backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px); border: 1px solid rgba(255,255,255,0.08); }
+
+        /* Atmospheric orbs */
+        .orb { position: fixed; border-radius: 50%; filter: blur(140px); pointer-events: none; z-index: 0; }
+        .orb-1 { width: 500px; height: 500px; top: -180px; right: -130px; background: var(--accent); opacity: 0.04; animation: d1 15s ease-in-out infinite; }
+        .orb-2 { width: 450px; height: 450px; bottom: -180px; left: -110px; background: var(--purple); opacity: 0.035; animation: d2 18s ease-in-out infinite; }
+        @keyframes d1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-25px,20px) scale(1.1); } }
+        @keyframes d2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(20px,-25px) scale(1.12); } }
+
+        /* Player controls */
+        .player-controls { opacity: 0; transition: opacity 0.35s ease; }
+        .player-wrap:hover .player-controls,
+        .player-wrap.controls-visible .player-controls { opacity: 1; }
+
+        /* Progress bar */
+        .vid-progress { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 4px; background: rgba(255,255,255,0.12); cursor: pointer; transition: height 0.15s; }
+        .vid-progress:hover { height: 6px; }
+        .vid-progress::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); cursor: pointer; }
+        .vid-progress::-moz-range-thumb { width: 14px; height: 14px; border: none; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); cursor: pointer; }
+        .vid-progress::-webkit-slider-runnable-track { border-radius: 4px; }
+        .vid-progress.buffered { position: relative; }
+
+        /* Volume slider */
+        .vol-slider { -webkit-appearance: none; appearance: none; width: 70px; height: 3px; border-radius: 3px; background: rgba(255,255,255,0.15); cursor: pointer; }
+        .vol-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 10px; border-radius: 50%; background: #fff; cursor: pointer; }
+        .vol-slider::-moz-range-thumb { width: 10px; height: 10px; border: none; border-radius: 50%; background: #fff; cursor: pointer; }
+
+        /* Download button */
+        .dl-btn {
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+        .dl-btn:hover {
+            background: rgba(255,255,255,0.15);
+            border-color: rgba(255,255,255,0.2);
+            transform: scale(1.06);
+            box-shadow: 0 0 20px rgba(255,255,255,0.06), 0 0 40px var(--accent-glow);
+        }
+        .dl-btn:active { transform: scale(0.96); }
+
+        /* Download quality dropdown */
+        .dl-dropdown { transition: opacity 0.25s ease, transform 0.25s ease; transform-origin: bottom center; }
+        .dl-dropdown.hidden { opacity: 0; transform: scale(0.92) translateY(6px); pointer-events: none; }
+
+        /* Quality option */
+        .ql-opt { transition: background 0.2s ease, color 0.2s ease; }
+        .ql-opt:hover { background: rgba(229,9,20,0.15); color: var(--accent); }
+        .ql-opt.active { background: rgba(229,9,20,0.2); color: var(--accent); }
+
+        /* Download progress bar */
+        .dl-progress-fill { transition: width 0.3s ease; }
+
+        /* Toast */
+        .toast { transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), opacity 0.35s ease; }
+
+        /* Sidebar link */
+        .sb-link { transition: background 0.2s ease, color 0.2s ease; }
+        .sb-link:hover { background: rgba(255,255,255,0.05); }
+        .sb-link.active { background: rgba(255,255,255,0.07); }
+
+        /* Comment hover */
+        .comment-row:hover { background: rgba(255,255,255,0.02); }
+
+        /* Like/dislike buttons */
+        .react-btn { transition: all 0.2s ease; }
+        .react-btn:hover { background: rgba(255,255,255,0.08); }
+        .react-btn.active { color: var(--accent); }
+
+        /* Focus visible */
+        *:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+        }
+
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-up { animation: fadeUp 0.6s ease-out both; }
+        .fade-up-d1 { animation-delay: 0.1s; }
+        .fade-up-d2 { animation-delay: 0.2s; }
+    </style>
+</head>
+<body class="min-h-screen relative">
+
+    <!-- Background atmosphere -->
+    <div class="orb orb-1" aria-hidden="true"></div>
+    <div class="orb orb-2" aria-hidden="true"></div>
+
+    <!-- ========== SIDEBAR ========== -->
+    <aside class="fixed top-0 left-0 h-full w-60 z-40 glass-strong flex-col py-5 px-3 hidden lg:flex" aria-label="Navigation">
+        <div class="flex items-center gap-2.5 px-3 mb-7">
+            <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, var(--accent), var(--purple));">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M8 5.14v13.72a.5.5 0 0 0 .75.43l11.5-6.86a.5.5 0 0 0 0-.86L8.75 4.71a.5.5 0 0 0-.75.43Z" fill="#fff"/></svg>
+            </div>
+            <span class="font-bold text-sm tracking-wide">STREAMVAULT</span>
+        </div>
+        <nav class="flex flex-col gap-0.5 flex-1">
+            <a href="#" class="sb-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/40"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</a>
+            <a href="#" class="sb-link active flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>Watch</a>
+            <a href="#" class="sb-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/40"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Downloads</a>
+            <a href="#" class="sb-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/40"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Watchlist</a>
+            <a href="#" class="sb-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/40"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</a>
+        </nav>
+    </aside>
+
+    <!-- ========== NAVBAR ========== -->
+    <nav class="fixed top-0 left-0 right-0 z-30 lg:left-60 transition-all duration-300" id="navbar">
+        <div class="glass px-4 sm:px-6 py-3 flex items-center gap-3">
+            <div class="lg:hidden flex items-center gap-2 shrink-0">
+                <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, var(--accent), var(--purple));">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M8 5.14v13.72a.5.5 0 0 0 .75.43l11.5-6.86a.5.5 0 0 0 0-.86L8.75 4.71a.5.5 0 0 0-.75.43Z" fill="#fff"/></svg>
+                </div>
+            </div>
+            <div class="flex-1 max-w-lg mx-auto relative">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <input type="text" placeholder="Search videos..." class="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white/[0.05] border border-white/[0.06] text-sm text-white placeholder-white/20 focus:outline-none focus:border-white/15 transition-all" aria-label="Search">
+            </div>
+            <button class="p-2 rounded-xl hover:bg-white/[0.06] transition-colors relative shrink-0" aria-label="Notifications">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                <span class="absolute top-1 right-1 w-2 h-2 rounded-full" style="background:var(--accent);"></span>
+            </button>
+            <button class="w-8 h-8 rounded-xl overflow-hidden shrink-0" aria-label="Profile">
+                <img src="https://picsum.photos/seed/me42/64/64" alt="Profile" class="w-full h-full object-cover">
+            </button>
+        </div>
+    </nav>
+
+    <!-- ========== MAIN ========== -->
+    <main class="relative z-10 lg:ml-60 pt-16">
+
+        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 py-6">
+            <div class="flex flex-col xl:flex-row gap-6">
+
+                <!-- LEFT: Player + Info + Comments -->
+                <div class="flex-1 min-w-0">
+
+                    <!-- VIDEO PLAYER -->
+                    <section class="player-wrap relative rounded-2xl overflow-hidden bg-black aspect-video fade-up" aria-label="Video player">
+                        <video id="videoPlayer" class="w-full h-full object-cover" poster="https://picsum.photos/seed/cosmicscene/1280/720" preload="metadata">
+                            <!-- Using a small sample video from a public domain source -->
+                            <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+                        </video>
+
+                        <!-- Center play overlay -->
+                        <div id="centerOverlay" class="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer z-10" onclick="togglePlay()">
+                            <div id="centerIcon" class="w-16 h-16 rounded-full bg-[var(--accent)]/90 flex items-center justify-center transition-transform hover:scale-110 shadow-lg shadow-[var(--accent-glow)]">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+                            </div>
+                        </div>
+
+                        <!-- Controls -->
+                        <div class="player-controls absolute bottom-0 left-0 right-0 z-20">
+                            <!-- Progress -->
+                            <div class="px-3 pb-1">
+                                <input type="range" id="progressBar" class="vid-progress w-full" min="0" max="100" value="0" step="0.1" oninput="seekTo(this.value)">
+                            </div>
+                            <!-- Buttons row -->
+                            <div class="px-3 pb-3 pt-1 flex items-center justify-between bg-gradient-to-t from-black/70 via-black/40 to-transparent">
+                                <div class="flex items-center gap-1.5">
+                                    <!-- Play/Pause -->
+                                    <button onclick="togglePlay()" class="w-9 h-9 rounded-xl hover:bg-white/10 flex items-center justify-center transition-colors" aria-label="Play or Pause" id="playPauseBtn">
+                                        <svg id="ppIcon" width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+                                    </button>
+                                    <!-- Skip back -->
+                                    <button onclick="skip(-10)" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors" aria-label="Rewind 10s">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                                    </button>
+                                    <!-- Skip forward -->
+                                    <button onclick="skip(10)" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors" aria-label="Forward 10s">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/></svg>
+                                    </button>
+                                    <!-- Volume -->
+                                    <div class="flex items-center gap-1 group">
+                                        <button onclick="toggleMute()" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors" aria-label="Toggle mute" id="muteBtn">
+                                            <svg id="volIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                                        </button>
+                                        <input type="range" id="volSlider" class="vol-slider opacity-0 group-hover:opacity-100 transition-opacity" min="0" max="100" value="80" oninput="setVolume(this.value)">
+                                    </div>
+                                    <!-- Time -->
+                                    <span class="text-[11px] text-white/50 tabular-nums ml-1" id="timeDisplay">0:00 / 0:00</span>
+                                </div>
+
+                                <div class="flex items-center gap-1.5">
+                                    <!-- ★★★ DOWNLOAD BUTTON ★★★ -->
+                                    <div class="relative" id="dlWrap">
+                                        <button id="downloadBtn" class="dl-btn flex items-center gap-2 px-3 py-2 rounded-xl text-white/80 text-xs font-medium cursor-pointer" onclick="toggleDlDropdown()" aria-label="Download video" aria-haspopup="true">
+                                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                                                <path d="M12 3v12m0 0l4-4m-4 4l-4-4"/>
+                                                <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+                                            </svg>
+                                            <span class="hidden sm:inline">Download</span>
+                                            <svg class="hidden sm:block" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                                        </button>
+
+                                        <!-- Download quality dropdown -->
+                                        <div id="dlDropdown" class="dl-dropdown hidden absolute bottom-full right-0 mb-2 w-56 glass-strong rounded-xl overflow-hidden shadow-2xl shadow-black/60 z-30">
+                                            <!-- Dropdown header -->
+                                            <div class="px-4 py-2.5 border-b border-white/[0.06]">
+                                                <p class="text-[11px] font-semibold text-white/70">Select Quality</p>
+                                            </div>
+                                            <!-- Quality options -->
+                                            <button onclick="startDownload('1080p','280 MB')" class="ql-opt active w-full flex items-center justify-between px-4 py-3 text-xs text-white/60 cursor-pointer border-0 bg-transparent">
+                                                <div class="flex items-center gap-2.5">
+                                                    <span class="font-semibold text-white/80">1080p</span>
+                                                    <span class="text-[10px]" style="color:var(--dim);">Full HD</span>
+                                                </div>
+                                                <span class="text-[10px] tabular-nums" style="color:var(--dim);">280 MB</span>
+                                            </button>
+                                            <button onclick="startDownload('720p','145 MB')" class="ql-opt w-full flex items-center justify-between px-4 py-3 text-xs text-white/60 cursor-pointer border-0 bg-transparent">
+                                                <div class="flex items-center gap-2.5">
+                                                    <span class="font-semibold text-white/80">720p</span>
+                                                    <span class="text-[10px]" style="color:var(--dim);">HD</span>
+                                                </div>
+                                                <span class="text-[10px] tabular-nums" style="color:var(--dim);">145 MB</span>
+                                            </button>
+                                            <button onclick="startDownload('480p','72 MB')" class="ql-opt w-full flex items-center justify-between px-4 py-3 text-xs text-white/60 cursor-pointer border-0 bg-transparent">
+                                                <div class="flex items-center gap-2.5">
+                                                    <span class="font-semibold text-white/80">480p</span>
+                                                    <span class="text-[10px]" style="color:var(--dim);">SD</span>
+                                                </div>
+                                                <span class="text-[10px] tabular-nums" style="color:var(--dim);">72 MB</span>
+                                            </button>
+                                            <button onclick="startDownload('360p','38 MB')" class="ql-opt w-full flex items-center justify-between px-4 py-3 text-xs text-white/60 cursor-pointer border-0 bg-transparent">
+                                                <div class="flex items-center gap-2.5">
+                                                    <span class="font-semibold text-white/80">360p</span>
+                                                    <span class="text-[10px]" style="color:var(--dim);">Low</span>
+                                                </div>
+                                                <span class="text-[10px] tabular-nums" style="color:var(--dim);">38 MB</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Watchlist -->
+                                    <button class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors" aria-label="Add to watchlist">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                                    </button>
+                                    <!-- Fullscreen -->
+                                    <button onclick="toggleFs()" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors" aria-label="Fullscreen">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- DOWNLOAD PROGRESS BAR (appears below player) -->
+                    <div id="dlProgressWrap" class="hidden mt-3 fade-up">
+                        <div class="glass-strong rounded-xl px-4 py-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <svg width="14" height="14" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+                                    <span class="text-xs font-semibold text-white/70" id="dlFileName">Big_Buck_Bunny_1080p.mp4</span>
+                                </div>
+                                <span class="text-xs font-semibold tabular-nums" style="color:var(--accent);" id="dlPercent">0%</span>
+                            </div>
+                            <div class="w-full h-1.5 rounded-full overflow-hidden" style="background:rgba(255,255,255,0.08);">
+                                <div id="dlProgressFill" class="dl-progress-fill h-full rounded-full" style="width:0%; background: linear-gradient(90deg, var(--accent), var(--purple));"></div>
+                            </div>
+                            <div class="flex items-center justify-between mt-1.5">
+                                <span class="text-[10px] tabular-nums" style="color:var(--dim);" id="dlSize">0 MB / 280 MB</span>
+                                <span class="text-[10px]" style="color:var(--dim);" id="dlSpeed">0 MB/s</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- VIDEO INFO -->
+                    <section class="mt-5 fade-up fade-up-d1">
+                        <h1 class="text-lg sm:text-xl font-bold leading-snug mb-2">Big Buck Bunny — Official Short Film</h1>
+                        <div class="flex flex-wrap items-center gap-3 text-xs mb-4" style="color:var(--muted);">
+                            <span>1.2M views</span>
+                            <span class="w-1 h-1 rounded-full bg-white/15"></span>
+                            <span>Published 2 years ago</span>
+                            <span class="w-1 h-1 rounded-full bg-white/15"></span>
+                            <span class="flex items-center gap-1">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                9.4
+                            </span>
+                        </div>
+
+                        <!-- Action buttons row -->
+                        <div class="flex flex-wrap gap-2 mb-5">
+                            <button class="react-btn flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium text-white/60 glass cursor-pointer border-0" onclick="this.classList.toggle('active')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                                <span class="like-count">24K</span>
+                            </button>
+                            <button class="react-btn flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium text-white/60 glass cursor-pointer border-0" onclick="this.classList.toggle('active')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
+                                Dislike
+                            </button>
+                            <button onclick="showToast('Link copied to clipboard')" class="react-btn flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium text-white/60 glass cursor-pointer border-0">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                                Share
+                            </button>
+                            <button onclick="showToast('Added to Watch Later')" class="react-btn flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium text-white/60 glass cursor-pointer border-0">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                Watch Later
+                            </button>
+                        </div>
+
+                        <!-- Creator info -->
+                        <div class="glass rounded-2xl p-4 flex items-center gap-4 mb-6">
+                            <img src="https://picsum.photos/seed/creator55/80/80" alt="Creator" class="w-11 h-11 rounded-xl object-cover shrink-0">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-bold">Blender Foundation</p>
+                                <p class="text-[11px]" style="color:var(--dim);">2.1M subscribers</p>
+                            </div>
+                            <button onclick="this.textContent=this.textContent==='Subscribe'?'Subscribed':'Subscribe'; this.classList.toggle('subscribed')" class="px-5 py-2 rounded-xl text-xs font-bold text-white cursor-pointer border-0 transition-all" style="background:var(--accent);">
+                                Subscribe
+                            </button>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="glass rounded-2xl p-4 mb-6">
+                            <p class="text-xs leading-relaxed" style="color:var(--muted);">
+                                Big Buck Bunny is a short computer-animated comedy film featuring a giant rabbit with a heart bigger than himself. When three bullies harass him, something snaps — and the rabbit becomes less cute. Created by the Blender Institute using open-source tools. This video demonstrates the download feature of the StreamVault platform.
+                            </p>
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                <span class="px-2.5 py-1 text-[10px] rounded-lg glass text-white/40">Animation</span>
+                                <span class="px-2.5 py-1 text-[10px] rounded-lg glass text-white/40">Short Film</span>
+                                <span class="px-2.5 py-1 text-[10px] rounded-lg glass text-white/40">Open Source</span>
+                                <span class="px-2.5 py-1 text-[10px] rounded-lg glass text-white/40">Creative Commons</span>
+                            </div>
+                        </div>
+
+                        <!-- Comments -->
+                        <div class="mb-10">
+                            <h3 class="text-sm font-bold mb-4 flex items-center gap-2">
+                                <span class="w-1 h-4 rounded-full" style="background:var(--purple);"></span>
+                                847 Comments
+                            </h3>
+                            <div class="space-y-0" id="commentsList">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- RIGHT: Recommended sidebar -->
+                <aside class="w-full xl:w-[380px] shrink-0 fade-up fade-up-d2">
+                    <h3 class="text-sm font-bold mb-4 flex items-center gap-2">
+                        <span class="w-1 h-4 rounded-full" style="background:var(--accent);"></span>
+                        Up Next
+                    </h3>
+                    <div class="space-y-3" id="recList"></div>
+                </aside>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- TOAST -->
+    <div id="toast" class="toast fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] glass-strong px-5 py-3 rounded-2xl text-xs font-medium shadow-2xl shadow-black/50 translate-y-4 opacity-0 pointer-events-none flex items-center gap-2.5">
+        <svg id="toastIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <span id="toastMsg" class="text-white/70"></span>
+    </div>
+
+    <script>
+        // ============================
+        // Data
+        // ============================
+        const comments = [
+            { user: 'FilmBuff_92', avatar: 'cmt1', color: '#ef4444', text: 'This is still one of the best animated shorts ever made. The attention to detail is incredible.', time: '3 days ago', likes: 342 },
+            { user: 'TechNerd', avatar: 'cmt2', color: '#3b82f6', text: 'Love that this was made entirely with free software. Blender is amazing.', time: '1 week ago', likes: 218 },
+            { user: 'CinemaLover', avatar: 'cmt3', color: '#22c55e', text: 'The lighting in the forest scenes is absolutely gorgeous. What renderer did they use?', time: '2 weeks ago', likes: 156 },
+            { user: 'AnimatorPro', avatar: 'cmt4', color: '#f59e0b', text: 'As someone in the industry, the fur simulation on the bunny is top-tier even by today\'s standards.', time: '3 weeks ago', likes: 89 },
+            { user: 'OpenSourceFan', avatar: 'cmt5', color: '#a78bfa', text: 'This is why open source matters. Beautiful art accessible to everyone.', time: '1 month ago', likes: 127 },
+        ];
+
+        const recommended = [
+            { title: 'Sintel — Official Short Film', channel: 'Blender Foundation', views: '890K', duration: '14:48', image: 'rec1' },
+            { title: 'Elephants Dream — Open Source Film', channel: 'Blender Foundation', views: '1.2M', duration: '10:54', image: 'rec2' },
+            { title: 'Tears of Steel — Sci-Fi Short', channel: 'Blender Foundation', views: '2.1M', duration: '12:14', image: 'rec3' },
+            { title: 'Spring — Blender Open Movie', channel: 'Blender Foundation', views: '3.4M', duration: '7:46', image: 'rec4' },
+            { title: 'Cosmos Laundromat — Pilot', channel: 'Blender Foundation', views: '1.8M', duration: '12:10', image: 'rec5' },
+            { title: 'Glass Half — Animation Study', channel: 'AnimationStudio', views: '456K', duration: '3:22', image: 'rec6' },
+            { title: 'Path Trace Comparison 2025', channel: 'RenderTech', views: '234K', duration: '18:05', image: 'rec7' },
+            { title: 'Making of Big Buck Bunny', channel: 'BehindScenes', views: '678K', duration: '22:30', image: 'rec8' },
+        ];
+
+        // ============================
+        // Render
+        // ============================
+        function renderComments() {
+            const el = document.getElementById('commentsList');
+            el.innerHTML = comments.map(c => `
+                <div class="comment-row flex gap-3 py-3.5 px-2 rounded-xl transition-colors cursor-default" style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                    <img src="https://picsum.photos/seed/${c.avatar}/64/64" alt="${c.user}" class="w-9 h-9 rounded-xl object-cover shrink-0 mt-0.5">
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2 mb-0.5">
+                            <span class="text-xs font-semibold" style="color:${c.color};">${c.user}</span>
+                            <span class="text-[10px]" style="color:var(--dim);">${c.time}</span>
+                        </div>
+                        <p class="text-xs leading-relaxed" style="color:var(--muted);">${c.text}</p>
+                        <button class="flex items-center gap-1 mt-1.5 text-[10px] font-medium cursor-pointer bg-transparent border-0" style="color:var(--dim);" onmouseover="this.style.color='rgba(255,255,255,0.6)'" onmouseout="this.style.color='var(--dim)'">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/></svg>
+                            ${c.likes}
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderRecommended() {
+            const el = document.getElementById('recList');
+            el.innerHTML = recommended.map(r => `
+                <div class="flex gap-3 p-2 rounded-xl hover:bg-white/[0.03] transition-colors cursor-pointer group" onclick="showToast('Now playing: ${r.title.replace(/'/g, "\\'")}')">
+                    <div class="relative w-40 sm:w-44 shrink-0 aspect-video rounded-xl overflow-hidden">
+                        <img src="https://picsum.photos/seed/${r.image}/400/225" alt="${r.title}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy">
+                        <span class="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded text-[9px] font-medium bg-black/75 text-white/70 tabular-nums">${r.duration}</span>
+                    </div>
+                    <div class="flex-1 min-w-0 py-0.5">
+                        <h4 class="text-xs font-semibold leading-snug line-clamp-2 mb-1">${r.title}</h4>
+                        <p class="text-[10px]" style="color:var(--dim);">${r.channel}</p>
+                        <p class="text-[10px]" style="color:var(--dim);">${r.views} views</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ============================
+        // Video Player Logic
+        // ============================
+        const video = document.getElementById('videoPlayer');
+        const progressBar = document.getElementById('progressBar');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const centerOverlay = document.getElementById('centerOverlay');
+        let isPlaying = false;
+        let isMuted = false;
+        let controlsTimer = null;
+
+        function togglePlay() {
+            if (video.paused) {
+                video.play();
+            } else {
+                video.pause();
+            }
+        }
+
+        video.addEventListener('play', () => {
+            isPlaying = true;
+            updatePPIcon();
+            centerOverlay.style.opacity = '0';
+            centerOverlay.style.pointerEvents = 'none';
+            startControlsTimer();
+        });
+
+        video.addEventListener('pause', () => {
+            isPlaying = false;
+            updatePPIcon();
+            centerOverlay.style.opacity = '1';
+            centerOverlay.style.pointerEvents = 'auto';
+            document.querySelector('.player-wrap').classList.add('controls-visible');
+        });
+
+        video.addEventListener('ended', () => {
+            isPlaying = false;
+            updatePPIcon();
+            centerOverlay.style.opacity = '1';
+            centerOverlay.style.pointerEvents = 'auto';
+        });
+
+        function updatePPIcon() {
+            const icon = document.getElementById('ppIcon');
+            const center = document.getElementById('centerIcon');
+            if (isPlaying) {
+                icon.innerHTML = '<rect x="6" y="4" width="4" height="16" fill="white"/><rect x="14" y="4" width="4" height="16" fill="white"/>';
+                center.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="white"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+            } else {
+                icon.innerHTML = '<path d="M8 5v14l11-7z" fill="white"/>';
+                center.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>';
+            }
+        }
+
+        video.addEventListener('timeupdate', () => {
+            if (video.duration) {
+                progressBar.value = (video.currentTime / video.duration) * 100;
+                timeDisplay.textContent = `${fmtTime(video.currentTime)} / ${fmtTime(video.duration)}`;
+            }
+        });
+
+        function seekTo(val) { video.currentTime = (val / 100) * video.duration; }
+        function skip(sec) { video.currentTime = Math.max(0, Math.min(video.duration, video.currentTime + sec)); }
+
+        function fmtTime(s) {
+            const m = Math.floor(s / 60);
+            const sec = Math.floor(s % 60);
+            return `${m}:${sec.toString().padStart(2, '0')}`;
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            video.muted = isMuted;
+            document.getElementById('volIcon').innerHTML = isMuted
+                ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>'
+                : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>';
+            document.getElementById('volSlider').value = isMuted ? 0 : video.volume * 100;
+        }
+
+        function setVolume(val) {
+            video.volume = val / 100;
+            video.muted = val == 0;
+            isMuted = val == 0;
+        }
+
+        function toggleFs() {
+            const p = document.querySelector('.player-wrap');
+            if (!document.fullscreenElement) p.requestFullscreen?.();
+            else document.exitFullscreen?.();
+        }
+
+        // Auto-hide controls
+        function startControlsTimer() {
+            clearTimeout(controlsTimer);
+            document.querySelector('.player-wrap').classList.remove('controls-visible');
+            controlsTimer = setTimeout(() => {
+                if (isPlaying) document.querySelector('.player-wrap').classList.remove('controls-visible');
+            }, 3000);
+        }
+        document.querySelector('.player-wrap').addEventListener('mousemove', startControlsTimer);
+
+        // Set initial volume
+        video.volume = 0.8;
+
+        // ============================
+        // ★★★ DOWNLOAD LOGIC ★★★
+        // ============================
+        let dlDropdownOpen = false;
+        let dlInterval = null;
+
+        function toggleDlDropdown() {
+            dlDropdownOpen = !dlDropdownOpen;
+            document.getElementById('dlDropdown').classList.toggle('hidden', !dlDropdownOpen);
+        }
+
+        // Close dropdown on outside click
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#dlWrap')) {
+                dlDropdownOpen = false;
+                document.getElementById('dlDropdown').classList.add('hidden');
+            }
+        });
+
+        /**
+         * Start download — triggers a real download for self-hosted videos.
+         * Falls back to a simulated progress bar if the URL is cross-origin.
+         */
+        function startDownload(quality, fileSize) {
+            // Close dropdown
+            dlDropdownOpen = false;
+            document.getElementById('dlDropdown').classList.add('hidden');
+
+            const videoSrc = video.querySelector('source').src;
+
+            // Update UI elements
+            const fileName = `Big_Buck_Bunny_${quality}.mp4`;
+            document.getElementById('dlFileName').textContent = fileName;
+            document.getElementById('dlPercent').textContent = '0%';
+            document.getElementById('dlSize').textContent = `0 MB / ${fileSize}`;
+            document.getElementById('dlSpeed').textContent = 'Calculating...';
+            document.getElementById('dlProgressFill').style.width = '0%';
+
+            // Show progress bar
+            const wrap = document.getElementById('dlProgressWrap');
+            wrap.classList.remove('hidden');
+            wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            // Attempt real download via fetch+blob for same-origin files
+            const totalMB = parseFloat(fileSize);
+            let downloadedMB = 0;
+
+            showToast(`Download started — ${quality}`);
+
+            try {
+                // Try fetch to get real progress (works for same-origin)
+                fetch(videoSrc)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Cross-origin');
+                        const contentLength = response.headers.get('content-length');
+                        const reader = response.body.getReader();
+                        const chunks = [];
+
+                        function read() {
+                            reader.read().then(({ done, value }) => {
+                                if (done) {
+                                    // Complete — create blob and trigger download
+                                    const blob = new Blob(chunks, { type: 'video/mp4' });
+                                    triggerBlobDownload(blob, fileName);
+                                    completeDownload();
+                                    return;
+                                }
+                                chunks.push(value);
+                                downloadedMB += value.byteLength / (1024 * 1024);
+                                updateDlProgress(downloadedMB, totalMB);
+                                read();
+                            });
+                        }
+                        read();
+                    })
+                    .catch(() => {
+                        // Cross-origin fallback: trigger direct download + simulate progress
+                        triggerDirectDownload(videoSrc, fileName);
+                        simulateProgress(totalMB);
+                    });
+            } catch {
+                triggerDirectDownload(videoSrc, fileName);
+                simulateProgress(totalMB);
+            }
+        }
+
+        function triggerBlobDownload(blob, fileName) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+        }
+
+        function triggerDirectDownload(url, fileName) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.target = '_blank';
+            a.rel = 'noopener';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function simulateProgress(totalMB) {
+            let current = 0;
+            clearInterval(dlInterval);
+            dlInterval = setInterval(() => {
+                // Simulate variable download speed
+                const increment = totalMB * (0.02 + Math.random() * 0.06);
+                current = Math.min(current + increment, totalMB);
+                updateDlProgress(current, totalMB);
+                if (current >= totalMB) {
+                    completeDownload();
+                }
+            }, 200);
+        }
+
+        function updateDlProgress(current, total) {
+            const pct = Math.min(Math.round((current / total) * 100), 100);
+            document.getElementById('dlPercent').textContent = pct + '%';
+            document.getElementById('dlSize').textContent = `${current.toFixed(1)} MB / ${total} MB`;
+
+            // Simulated speed
+            const speed = (2 + Math.random() * 8).toFixed(1);
+            document.getElementById('dlSpeed').textContent = `${speed} MB/s`;
+
+            document.getElementById('dlProgressFill').style.width = pct + '%';
+        }
+
+        function completeDownload() {
+            clearInterval(dlInterval);
+            document.getElementById('dlPercent').textContent = '100%';
+            document.getElementById('dlProgressFill').style.width = '100%';
+            document.getElementById('dlSpeed').textContent = 'Complete';
+
+            // Change percent color to green
+            document.getElementById('dlPercent').style.color = 'var(--green)';
+
+            showToast('Download complete — file saved');
+
+            // Hide progress after a delay
+            setTimeout(() => {
+                document.getElementById('dlProgressWrap').classList.add('hidden');
+                document.getElementById('dlPercent').style.color = 'var(--accent)';
+            }, 4000);
+        }
+
+        // ============================
+        // Toast
+        // ============================
+        let toastTimer = null;
+        function showToast(msg) {
+            clearTimeout(toastTimer);
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = msg;
+            t.style.transform = 'translate(-50%, 0)';
+            t.style.opacity = '1';
+            t.style.pointerEvents = 'auto';
+            toastTimer = setTimeout(() => {
+                t.style.transform = 'translate(-50%, 16px)';
+                t.style.opacity = '0';
+                t.style.pointerEvents = 'none';
+            }, 3000);
+        }
+
+        // ============================
+        // Navbar scroll shadow
+        // ============================
+        window.addEventListener('scroll', () => {
+            document.getElementById('navbar').querySelector('div').style.boxShadow =
+                window.scrollY > 20 ? '0 4px 30px rgba(0,0,0,0.4)' : 'none';
+        });
+
+        // ============================
+        // Init
+        // ============================
+        renderComments();
+        renderRecommended();
+    </script>
+</body>
+</html>
